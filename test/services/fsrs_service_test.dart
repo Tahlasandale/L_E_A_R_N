@@ -201,4 +201,72 @@ void main() {
       expect(card.ease, 2.8); // facilité préservée
     });
   });
+
+  group('FsrsService - Taux de Rétention Paramétrable', () {
+    test('Un taux de rétention élevé (95%) raccourcit les intervalles pour minimiser l\'oubli', () {
+      final now = DateTime(2026, 11, 11, 10, 0);
+
+      final resultStandard = FsrsService.calculateNextReview(
+        reps: 2,
+        interval: 10.0,
+        ease: 2.5,
+        rating: 3,
+        isIntensiveMinutes: false,
+        desiredRetention: 0.90, // Baseline standard
+        referenceTime: now,
+      );
+
+      final resultHighRetention = FsrsService.calculateNextReview(
+        reps: 2,
+        interval: 10.0,
+        ease: 2.5,
+        rating: 3,
+        isIntensiveMinutes: false,
+        desiredRetention: 0.95, // Rétention forte
+        referenceTime: now,
+      );
+
+      // 10 * 2.5 = 25 jours en baseline. À 95% de rétention, l'intervalle est réduit de moitié (~12.2 jours)
+      expect(resultStandard.interval, 25.0);
+      expect(resultHighRetention.interval < resultStandard.interval, isTrue);
+      expect(resultHighRetention.interval, 12.2);
+    });
+
+    test('Un taux de rétention réduit (80%) allonge les intervalles pour espacer la charge de travail', () {
+      final now = DateTime(2026, 11, 11, 10, 0);
+
+      final resultStandard = FsrsService.calculateNextReview(
+        reps: 2,
+        interval: 10.0,
+        ease: 2.5,
+        rating: 3,
+        isIntensiveMinutes: false,
+        desiredRetention: 0.90,
+        referenceTime: now,
+      );
+
+      final resultLowRetention = FsrsService.calculateNextReview(
+        reps: 2,
+        interval: 10.0,
+        ease: 2.5,
+        rating: 3,
+        isIntensiveMinutes: false,
+        desiredRetention: 0.80,
+        referenceTime: now,
+      );
+
+      expect(resultLowRetention.interval > resultStandard.interval, isTrue);
+      expect(resultLowRetention.interval, 52.9);
+    });
+
+    test('Le seuil critique de cartes dues est plus réactif avec une rétention élevée', () {
+      final threshold90 = FsrsService.calculateCriticalThreshold(100, desiredRetention: 0.90);
+      final threshold95 = FsrsService.calculateCriticalThreshold(100, desiredRetention: 0.95);
+      final threshold80 = FsrsService.calculateCriticalThreshold(100, desiredRetention: 0.80);
+
+      // À 95% de rétention, le seuil tolère moins de cartes dues (10 cartes) qu'à 80% (40 cartes)
+      expect(threshold95 < threshold90, isTrue);
+      expect(threshold90 < threshold80, isTrue);
+    });
+  });
 }

@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../models/flashcard.dart';
 import '../providers/deck_provider.dart';
 import '../providers/review_provider.dart';
+import '../providers/settings_provider.dart';
 import '../services/storage_service.dart';
 import '../theme/catppuccin.dart';
 import '../widgets/adaptive_text.dart';
@@ -79,9 +80,11 @@ class _QcmScreenState extends State<QcmScreen> {
       if (isCorrect) _correctCount++;
     });
 
+    final settingsProvider = Provider.of<SettingsProvider>(context, listen: false);
     reviewProvider.rateCurrentCard(
       rating: isCorrect ? 4 : 1,
       isIntensiveMinutes: widget.isIntensiveMinutes,
+      desiredRetention: settingsProvider.desiredRetention,
       storage: storage,
     );
 

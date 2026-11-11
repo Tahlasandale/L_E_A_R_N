@@ -82,6 +82,7 @@ class NotificationService {
   /// Planifie une notification prédictive calculée d'après le seuil FSRS
   Future<void> scheduleOnAppPause({
     required List<Flashcard> allCards,
+    double desiredRetention = 0.90,
   }) async {
     if (kIsWeb || allCards.isEmpty) return;
     await init();
@@ -90,11 +91,12 @@ class NotificationService {
     final criticalDate = FsrsService.findCriticalDueDate(
       dueDates: dueDates,
       totalCards: allCards.length,
+      desiredRetention: desiredRetention,
     );
 
     if (criticalDate == null) return;
 
-    final threshold = FsrsService.calculateCriticalThreshold(allCards.length);
+    final threshold = FsrsService.calculateCriticalThreshold(allCards.length, desiredRetention: desiredRetention);
     final now = DateTime.now();
 
     // Si le seuil est déjà dépassé maintenant, ou si la date est passée

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/deck_provider.dart';
+import '../providers/settings_provider.dart';
 import '../services/notification_service.dart';
 import '../theme/catppuccin.dart';
 import 'dashboard_screen.dart';
@@ -50,8 +51,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
     if (state == AppLifecycleState.paused || state == AppLifecycleState.detached) {
       // Lorsque l'application passe en arrière-plan, programmer la notification prédictive (uniquement sur paquets actifs)
       final provider = Provider.of<DeckProvider>(context, listen: false);
+      final settingsProvider = Provider.of<SettingsProvider>(context, listen: false);
       final activeCards = provider.getActiveCardsPool();
-      NotificationService().scheduleOnAppPause(allCards: activeCards);
+      NotificationService().scheduleOnAppPause(
+        allCards: activeCards,
+        desiredRetention: settingsProvider.desiredRetention,
+      );
     }
   }
 

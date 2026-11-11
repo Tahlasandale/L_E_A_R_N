@@ -21,7 +21,7 @@
   <img src="https://img.shields.io/badge/Database-Isar%20NoSQL-4A154B" alt="Isar" />
   <img src="https://img.shields.io/badge/Algorithm-FSRS%20%2F%20SM--2-89B4FA" alt="FSRS" />
   <img src="https://img.shields.io/badge/Theme-Catppuccin%20Macchiato-1E1E2E?logoColor=CDD6F4" alt="Catppuccin Macchiato" />
-  <img src="https://img.shields.io/badge/Tests-30%2F30%20Passing-A6E3A1" alt="Tests" />
+  <img src="https://img.shields.io/badge/Tests-34%2F34%20Passing-A6E3A1" alt="Tests" />
   <img src="https://img.shields.io/badge/License-MIT-fab387" alt="License" />
 </p>
 
@@ -60,6 +60,13 @@ Chaque paquet peut être configuré selon l'objectif de révision :
 - **Mode Colles (Minutes)** : intervalles courts progressifs (1 min, 5 min, 10 min, 15 min...) conçus pour un entraînement intensif avant un examen ou une colle.
 - **Mode Long Terme (Jours)** : répétition espacée FSRS standard pour ancrer les connaissances sur la durée.
 - **Bascule instantanée & transposition mathématique FSRS** : passez un paquet d'un mode à l'autre en un tap. Le facteur de facilité `ease` acquis est préservé, et les intervalles/échéances sont intelligemment convertis !
+
+### 🎯 Taux de Rétention FSRS Paramétrable (70% à 98%)
+Ajustez l'algorithme d'espacement selon votre intensité de travail depuis l'onglet *Paramètres* :
+- **Curseur interactif & Paliers rapides** : `80% 🏖️ Détente`, `85% 📖 Équilibré`, `90% 🎯 Recommandé` (défaut FSRS), `95% ⚡ Examen Intensif`.
+- **Mise à l'échelle logarithmique FSRS** : ajuste dynamiquement les intervalles ($\text{facteur} = \frac{\ln(R)}{\ln(0.90)}$) lors de la validation des cartes.
+- **Seuil d'alerte adaptatif** : calibre automatiquement le volume critique pour les notifications prédictives.
+- **Persistance automatique** des préférences en stockage local.
 
 ### 💤 Gestion des Paquets Inactifs
 Basculez n'importe quel paquet en statut *Inactif* en un clic :

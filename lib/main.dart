@@ -5,6 +5,7 @@ import 'models/deck.dart';
 import 'models/flashcard.dart';
 import 'providers/deck_provider.dart';
 import 'providers/review_provider.dart';
+import 'providers/settings_provider.dart';
 import 'screens/deck_detail_screen.dart';
 import 'screens/main_navigation_screen.dart';
 import 'screens/qcm_screen.dart';
@@ -43,6 +44,9 @@ void main() async {
   final notificationService = NotificationService();
   await notificationService.init();
 
+  final settingsProvider = SettingsProvider();
+  await settingsProvider.init();
+
   final deckProvider = DeckProvider(storage);
   final reviewProvider = ReviewProvider();
 
@@ -78,6 +82,7 @@ void main() async {
     MultiProvider(
       providers: [
         Provider<StorageService>.value(value: storage),
+        ChangeNotifierProvider<SettingsProvider>.value(value: settingsProvider),
         ChangeNotifierProvider<DeckProvider>.value(value: deckProvider),
         ChangeNotifierProvider<ReviewProvider>.value(value: reviewProvider),
       ],

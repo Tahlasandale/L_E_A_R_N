@@ -30,12 +30,17 @@ class FsrsService {
     required double ease,
     required int rating,
     required bool isIntensiveMinutes,
+    double desiredRetention = 0.90,
     DateTime? referenceTime,
   }) {
     final now = referenceTime ?? DateTime.now();
     int newReps = reps + 1;
     double newEase = ease;
     double newInterval = interval;
+
+    // Multiplicateur FSRS basé sur le taux de rétention souhaité (baseline 90%)
+    final clampedR = desiredRetention.clamp(0.70, 0.98);
+    final double retentionFactor = log(clampedR) / log(0.90);
 
     if (isIntensiveMinutes) {
       // --- MODE COLLES (Minutes) ---
@@ -52,7 +57,12 @@ class FsrsService {
         newEase = ease + 0.15;
       }
 
-      // Arrondir la facilité à 2 décimales pour éviter les dérives de float
+      if (rating > 1) {
+        newInterval = max(1.0, newInterval * retentionFactor);
+      }
+
+      // Arrondir l'intervalle et la facilité
+      newInterval = double.parse(newInterval.toStringAsFixed(1));
       newEase = double.parse(newEase.toStringAsFixed(2));
 
       final dueDate = now.add(Duration(
@@ -86,6 +96,11 @@ class FsrsService {
         newEase = ease + 0.15;
       }
 
+      if (rating > 1) {
+        newInterval = max(1.0, newInterval * retentionFactor);
+      }
+
+      newInterval = double.parse(newInterval.toStringAsFixed(1));
       newEase = double.parse(newEase.toStringAsFixed(2));
 
       final dueDate = now.add(Duration(
@@ -102,18 +117,21 @@ class FsrsService {
   }
 
   /// Calcule le seuil critique de cartes en attente avant notification
-  /// Représente ~20% du paquet avec un minimum de 3 cartes
-  static int calculateCriticalThreshold(int totalCards) {
+  /// Tient compte du taux de rétention cible : plus le taux est élevé, plus le seuil est réactif
+  static int calculateCriticalThreshold(int totalCards, {double desiredRetention = 0.90}) {
     if (totalCards <= 0) return 0;
-    return max(3, (totalCards * 0.2).round());
+    final clampedR = desiredRetention.clamp(0.70, 0.98);
+    final tolerance = (1.0 - clampedR) * 2;
+    return max(3, (totalCards * tolerance).round());
   }
 
   /// Trouve la date exacte à laquelle le seuil critique de cartes dues sera franchi
   static DateTime? findCriticalDueDate({
     required List<DateTime> dueDates,
     required int totalCards,
+    double desiredRetention = 0.90,
   }) {
-    final threshold = calculateCriticalThreshold(totalCards);
+    final threshold = calculateCriticalThreshold(totalCards, desiredRetention: desiredRetention);
     if (threshold == 0 || dueDates.length < threshold) return null;
 
     final sortedDates = List<DateTime>.from(dueDates)..sort();

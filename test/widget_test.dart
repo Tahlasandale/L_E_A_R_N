@@ -5,7 +5,9 @@ import 'package:learn_flashcards/models/deck.dart';
 import 'package:learn_flashcards/models/flashcard.dart';
 import 'package:learn_flashcards/providers/deck_provider.dart';
 import 'package:learn_flashcards/providers/review_provider.dart';
+import 'package:learn_flashcards/providers/settings_provider.dart';
 import 'package:learn_flashcards/screens/main_navigation_screen.dart';
+import 'package:learn_flashcards/screens/settings_screen.dart';
 import 'package:learn_flashcards/services/storage_service.dart';
 import 'package:learn_flashcards/widgets/adaptive_text.dart';
 import 'package:learn_flashcards/widgets/flip_card_3d.dart';
@@ -116,6 +118,7 @@ void main() {
     await tester.pumpWidget(
       MultiProvider(
         providers: [
+          ChangeNotifierProvider(create: (_) => SettingsProvider()),
           ChangeNotifierProvider(create: (_) => DeckProvider(fakeStorage)),
           ChangeNotifierProvider(create: (_) => ReviewProvider()),
         ],
@@ -155,5 +158,31 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Flashcards ⚡'), findsOneWidget);
+  });
+
+  testWidgets('SettingsScreen affiche le taux de rétention et réagit aux préréglages', (WidgetTester tester) async {
+    final settingsProvider = SettingsProvider();
+
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider.value(value: settingsProvider),
+        ],
+        child: const MaterialApp(
+          home: SettingsScreen(),
+        ),
+      ),
+    );
+
+    expect(find.text('Taux de Rétention FSRS'), findsOneWidget);
+    expect(find.text('90%'), findsOneWidget); // Badge
+    expect(find.text('90% 🎯'), findsOneWidget); // Preset chip
+
+    // Tap sur le preset 95%
+    await tester.tap(find.text('95% ⚡'));
+    await tester.pumpAndSettle();
+
+    expect(settingsProvider.desiredRetention, 0.95);
+    expect(find.text('95%'), findsOneWidget); // Badge mis à jour
   });
 }

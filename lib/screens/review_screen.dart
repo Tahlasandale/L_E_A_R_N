@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../providers/deck_provider.dart';
 import '../providers/review_provider.dart';
+import '../providers/settings_provider.dart';
 import '../services/storage_service.dart';
 import '../theme/catppuccin.dart';
 import '../widgets/flip_card_3d.dart';
@@ -20,10 +21,12 @@ class ReviewScreen extends StatelessWidget {
     HapticFeedback.lightImpact();
     final reviewProvider = Provider.of<ReviewProvider>(context, listen: false);
     final storage = Provider.of<StorageService>(context, listen: false);
+    final settingsProvider = Provider.of<SettingsProvider>(context, listen: false);
 
     reviewProvider.rateCurrentCard(
       rating: rating,
       isIntensiveMinutes: isIntensiveMinutes,
+      desiredRetention: settingsProvider.desiredRetention,
       storage: storage,
     );
 

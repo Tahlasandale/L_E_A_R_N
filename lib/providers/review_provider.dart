@@ -77,6 +77,7 @@ class ReviewProvider with ChangeNotifier {
   FsrsResult? rateCurrentCard({
     required int rating,
     required bool isIntensiveMinutes,
+    double desiredRetention = 0.90,
     StorageService? storage,
   }) {
     final card = currentCard;
@@ -88,6 +89,7 @@ class ReviewProvider with ChangeNotifier {
       ease: card.ease,
       rating: rating,
       isIntensiveMinutes: isIntensiveMinutes,
+      desiredRetention: desiredRetention,
     );
 
     // Mettre à jour l'entité

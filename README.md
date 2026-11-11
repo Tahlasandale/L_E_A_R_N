@@ -9,8 +9,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Tahlasandale/L_E_A_R_N/releases/download/v1.0.0/Kawaii-Flashcards-v1.0.0.apk">
-    <img src="https://img.shields.io/badge/Download-APK%20Android%20(v1.0.0)-89B4FA?style=for-the-badge&logo=android&logoColor=11111B" alt="Download APK" />
+  <a href="https://github.com/Tahlasandale/L_E_A_R_N/releases/latest/download/Kawaii-Flashcards.apk">
+    <img src="https://img.shields.io/github/v/release/Tahlasandale/L_E_A_R_N?label=Download%20APK%20Android&style=for-the-badge&logo=android&logoColor=11111B&color=89B4FA" alt="Download APK" />
   </a>
 </p>
 
@@ -151,8 +151,9 @@ flowchart TD
 ## 🚀 Installation & Lancement
 
 ### 📦 Télécharger l'APK direct
-Vous pouvez télécharger directement le binaire Android pré-compilé :  
-👉 **[Télécharger Kawaii-Flashcards-v1.0.0.apk](https://github.com/Tahlasandale/L_E_A_R_N/releases/download/v1.0.0/Kawaii-Flashcards-v1.0.0.apk)**
+Vous pouvez télécharger directement le binaire Android pré-compilé de la dernière version :  
+👉 **[Télécharger Kawaii-Flashcards.apk (Dernière Version)](https://github.com/Tahlasandale/L_E_A_R_N/releases/latest/download/Kawaii-Flashcards.apk)**  
+*(Ou explorer l'ensemble des releases sur [Releases GitHub](https://github.com/Tahlasandale/L_E_A_R_N/releases))*
 
 ### Cloner et compiler depuis les sources
 ```bash
@@ -165,7 +166,7 @@ flutter pub get
 ```bash
 flutter test
 ```
-*Résultat : 30/30 tests réussis.*
+*Résultat : 34/34 tests réussis.*
 
 ### Lancer l'analyse statique
 ```bash

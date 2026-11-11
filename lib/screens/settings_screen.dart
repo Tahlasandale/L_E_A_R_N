@@ -240,11 +240,11 @@ class SettingsScreen extends StatelessWidget {
                 ),
                 SizedBox(height: 12),
                 Text(
-                  'Kawaii Flashcards v1.0.0\n'
-                  '• Moteur de répétition espacée FSRS / SM-2 avec rétention paramétrable\n'
+                  'Kawaii Flashcards v1.1.0\n'
+                  '• Moteur de répétition espacée FSRS / SM-2 avec rétention paramétrable (70%-98%)\n'
                   '• Base de données Isar NoSQL ultra-rapide\n'
                   '• Thème Catppuccin Macchiato Sombre\n'
-                  '• Import / Export CSV avec séparateurs sur mesure\n'
+                  '• Import / Export CSV avec séparateurs sur mesure & téléchargements\n'
                   '• Mode Colles 2x2 Arcade avec zoom au maintien long\n'
                   '• Retours haptiques discrets sur mobile',
                   style: TextStyle(color: Catppuccin.subtext, fontSize: 13, height: 1.5),

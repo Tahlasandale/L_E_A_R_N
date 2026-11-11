@@ -17,16 +17,18 @@ class MainNavigationScreen extends StatefulWidget {
 class _MainNavigationScreenState extends State<MainNavigationScreen>
     with WidgetsBindingObserver {
   int _currentIndex = 0;
+  late final PageController _pageController;
 
-  final List<Widget> _screens = const [
-    DashboardScreen(),
-    DeckManagerScreen(),
-    SettingsScreen(),
+  late final List<Widget> _screens = const [
+    _KeepAlivePage(child: DashboardScreen()),
+    _KeepAlivePage(child: DeckManagerScreen()),
+    _KeepAlivePage(child: SettingsScreen()),
   ];
 
   @override
   void initState() {
     super.initState();
+    _pageController = PageController(initialPage: _currentIndex);
     WidgetsBinding.instance.addObserver(this);
     // Charger les paquets au démarrage
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -36,6 +38,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
 
   @override
   void dispose() {
+    _pageController.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -54,8 +57,13 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
+      body: PageView(
+        controller: _pageController,
+        onPageChanged: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
         children: _screens,
       ),
       bottomNavigationBar: Container(
@@ -69,7 +77,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
           unselectedItemColor: Catppuccin.overlay,
           selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w900, fontSize: 12),
           unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-          onTap: (index) => setState(() => _currentIndex = index),
+          onTap: (index) {
+            setState(() => _currentIndex = index);
+            _pageController.animateToPage(
+              index,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOutCubic,
+            );
+          },
           items: const [
             BottomNavigationBarItem(
               icon: Icon(Icons.flash_on),
@@ -87,5 +102,25 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
         ),
       ),
     );
+  }
+}
+
+class _KeepAlivePage extends StatefulWidget {
+  final Widget child;
+  const _KeepAlivePage({required this.child});
+
+  @override
+  State<_KeepAlivePage> createState() => _KeepAlivePageState();
+}
+
+class _KeepAlivePageState extends State<_KeepAlivePage>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return widget.child;
   }
 }

@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kawaii Maths Flashcards ⚡</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- KaTeX pour le rendu des formules mathématiques -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap');
+
+        /* Catppuccin Mocha Theme variables */
+        :root {
+            --bg-body: #11111b; /* Crust */
+            --bg-app: #1e1e2e; /* Base */
+            --bg-card: #181825; /* Mantle */
+            --text-main: #cdd6f4; /* Text */
+            
+            --primary: #89b4fa; /* Blue */
+            --primary-shadow: #313244; /* Surface0 */
+            
+            --secondary: #89dceb; /* Sky / Cyan */
+            --secondary-shadow: #313244; /* Surface0 */
+            
+            --red: #f38ba8;
+            --peach: #fab387;
+            --green: #a6e3a1;
+        }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* App Container mimicking mobile screen on PC */
+        .app-container {
+            max-width: 480px;
+            margin: 0 auto;
+            min-height: 100vh;
+            background-color: var(--bg-app);
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            border-left: 2px solid var(--electric-blue);
+            border-right: 2px solid var(--electric-blue);
+        }
+
+        /* Goofy Kawaii UI Elements - Modified for Dark Mode */
+        .kawaii-btn {
+            border-radius: 25px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.1s;
+            cursor: pointer;
+        }
+        .kawaii-btn-primary {
+            background: var(--primary);
+            border: 4px solid var(--primary-shadow);
+            color: var(--bg-body);
+            box-shadow: 0 6px 0 var(--primary-shadow);
+        }
+        .kawaii-btn-primary:active:not(:disabled) {
+            transform: translateY(6px);
+            box-shadow: 0 0px 0 var(--primary-shadow);
+        }
+        
+        .kawaii-btn-secondary {
+            background: var(--secondary);
+            border: 4px solid var(--secondary-shadow);
+            color: var(--bg-body);
+            box-shadow: 0 6px 0 var(--secondary-shadow);
+        }
+        .kawaii-btn-secondary:active:not(:disabled) {
+            transform: translateY(6px);
+            box-shadow: 0 0px 0 var(--secondary-shadow);
+        }
+
+        .kawaii-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        .kawaii-card-container {
+            perspective: 1000px;
+            width: 100%;
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .kawaii-card {
+            width: 100%;
+            height: 350px;
+            background: var(--bg-card);
+            border: 5px solid var(--secondary);
+            border-radius: 30px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 20px;
+            font-size: 1.25rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
+            transform-style: preserve-3d;
+            position: relative;
+        }
+
+        .kawaii-card.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            border-radius: 25px;
+        }
+
+        .card-front {
+            background: var(--bg-card);
+        }
+
+        .card-back {
+            background: #11111b; 
+            transform: rotateY(180deg);
+            border: 5px solid var(--primary);
+        }
+
+        /* QCM Elements */
+        #qcm-answers button {
+            overflow-wrap: break-word;
+            word-break: break-word;
+            white-space: normal;
+            line-height: 1.3;
+        }
+
+        /* Rating Buttons */
+        .rating-btn {
+            border: 3px solid;
+            border-radius: 20px;
+            font-weight: bold;
+            padding: 10px;
+            flex: 1;
+            margin: 0 5px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0 4px 0;
+            transition: all 0.1s;
+        }
+        .rating-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 0px 0;
+        }
+        
+        .btn-again { background: #311c25; border-color: var(--red); color: var(--red); }
+        .btn-hard { background: #33231f; border-color: var(--peach); color: var(--peach); }
+        .btn-good { background: #1c2a29; border-color: var(--green); color: var(--green); }
+        .btn-easy { background: #182338; border-color: var(--primary); color: var(--primary); }
+
+        .hidden { display: none !important; }
+        .view { display: flex; flex-direction: column; height: 100%; }
+
+        /* Goofy faces */
+        .face { font-size: 2rem; margin-bottom: 10px; }
+        
+        /* Modals */
+        .modal-overlay {
+            background-color: rgba(0, 0, 0, 0.7);
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    
+    <!-- HEADER -->
+    <header class="bg-[#11111b] p-4 flex justify-between items-center border-b-4 border-[#89dceb] shadow-md z-10">
+        <!-- Titre cliquable pour revenir à l'accueil -->
+        <h1 class="text-2xl font-black text-[#89dceb] tracking-wide cursor-pointer hover:text-white transition-colors flex items-center gap-2" onclick="app.switchView('view-dashboard')">
+            Maths ⚡
+        </h1>
+        <div class="flex items-center gap-4">
+            <button id="btn-random" onclick="app.toggleRandom()" class="text-2xl opacity-40 hover:opacity-100 transition-opacity" title="Ordre Aléatoire (On/Off)">🔀</button>
+            <div class="text-3xl text-[#89b4fa]" id="nav-mascot">(◕‿◕)</div>
+        </div>
+    </header>
+
+    <!-- DASHBOARD VIEW -->
+    <div id="view-dashboard" class="view p-6 flex-grow flex flex-col justify-center items-center gap-6">
+        <div class="bg-[#181825] rounded-3xl w-full p-6 border-4 border-[#89b4fa] shadow-[0_8px_0_#313244] text-center">
+            <div class="face text-[#cdd6f4]">\(^ヮ^)/</div>
+            <h2 class="text-xl font-bold mb-4 text-[#cdd6f4]">Progression</h2>
+            <div class="flex justify-around text-lg">
+                <div>
+                    <span class="block text-4xl font-black text-[#89dceb]" id="stat-total">0</span>
+                    <span class="text-gray-400 text-sm">Cartes</span>
+                </div>
+                <div>
+                    <span class="block text-4xl font-black text-[#89b4fa]" id="stat-due">0</span>
+                    <span class="text-gray-400 text-sm">À réviser</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex flex-col gap-4 mt-2 w-full">
+            <button onclick="app.startReview()" class="kawaii-btn kawaii-btn-primary py-4 text-xl w-full">
+                Révision Classique 🃏
+            </button>
+            <button onclick="app.startQcm()" class="kawaii-btn kawaii-btn-primary py-4 text-xl w-full">
+                Mode Colles (QCM) 📝
+            </button>
+            
+            <button onclick="app.switchView('view-import')" class="kawaii-btn kawaii-btn-secondary py-3 text-lg w-full mt-4">
+                📥 Importer des cartes
+            </button>
+        </div>
+    </div>
+
+    <!-- REVIEW VIEW (CLASSIC) -->
+    <div id="view-review" class="view hidden p-4 flex-grow flex flex-col">
+        <div class="text-center font-bold text-[#89dceb] mb-2" id="review-counter">Carte 1 / 10</div>
+        
+        <div class="kawaii-card-container">
+            <div id="flashcard" class="kawaii-card" onclick="app.flipCard()">
+                <div class="card-face card-front">
+                    <div class="text-sm text-[#89dceb] font-bold mb-4 uppercase tracking-widest">Question</div>
+                    <div id="card-front-content" class="text-xl">...</div>
+                </div>
+                <div class="card-face card-back">
+                    <div class="text-sm text-[#89b4fa] font-bold mb-4 uppercase tracking-widest">Réponse</div>
+                    <div id="card-back-content" class="text-xl">...</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="rating-controls" class="hidden flex justify-between pb-6 px-2 mt-4 gap-2">
+            <button class="rating-btn btn-again" onclick="app.rateCard(1)">
+                <span class="text-2xl">😭</span>
+                <span class="text-xs mt-1">À revoir</span>
+            </button>
+            <button class="rating-btn btn-hard" onclick="app.rateCard(2)">
+                <span class="text-2xl">🤔</span>
+                <span class="text-xs mt-1">Difficile</span>
+            </button>
+            <button class="rating-btn btn-good" onclick="app.rateCard(3)">
+                <span class="text-2xl">😊</span>
+                <span class="text-xs mt-1">Bien</span>
+            </button>
+            <button class="rating-btn btn-easy" onclick="app.rateCard(4)">
+                <span class="text-2xl">🤩</span>
+                <span class="text-xs mt-1">Facile</span>
+            </button>
+        </div>
+        
+        <div id="flip-hint" class="text-center text-[#89dceb] font-bold animate-pulse pb-6 mt-4">
+            Appuie sur la carte pour la retourner ! 👆
+        </div>
+    </div>
+
+    <!-- QCM VIEW (COLLES) -->
+    <div id="view-qcm" class="view hidden p-4 flex-grow flex flex-col">
+        <div class="text-center font-bold text-[#89dceb] mb-2" id="qcm-counter">Colle 1 / 10</div>
+        
+        <!-- Question Box -->
+        <div class="bg-[#181825] border-4 border-[#89b4fa] rounded-3xl p-6 mb-6 min-h-[150px] flex items-center justify-center text-center shadow-lg shadow-[#89b4fa]/10 mt-4">
+            <div id="qcm-question" class="text-xl font-bold text-[#cdd6f4]">...</div>
+        </div>
+
+        <!-- Answers Buttons -->
+        <div id="qcm-answers" class="flex flex-col gap-4 pb-6">
+            <!-- Injecté via JS -->
+        </div>
+    </div>
+
+    <!-- IMPORT VIEW -->
+    <div id="view-import" class="view hidden p-6 flex-grow flex flex-col">
+        <h2 class="text-2xl font-black text-[#89dceb] mb-2">Importer 📦</h2>
+        <p class="text-sm text-gray-400 mb-4">Format : <code>Question,Réponse;Question,Réponse;</code></p>
+        
+        <textarea id="import-text" class="w-full flex-grow p-4 rounded-2xl bg-[#11111b] text-[#cdd6f4] border-4 border-[#89b4fa] outline-none focus:border-[#89dceb] resize-none font-mono text-sm" placeholder="Colle tes flashcards ici..."></textarea>
+        
+        <div class="flex gap-4 mt-6">
+            <button onclick="app.switchView('view-dashboard')" class="kawaii-btn kawaii-btn-secondary py-3 px-6">
+                Retour
+            </button>
+            <button onclick="app.importCards()" class="kawaii-btn kawaii-btn-primary py-3 px-6 flex-grow">
+                Sauvegarder ⚡
+            </button>
+        </div>
+    </div>
+
+    <!-- CUSTOM MODAL (Replaces window.alert) -->
+    <div id="custom-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center modal-overlay p-4">
+        <div class="bg-[#181825] border-4 border-[#89dceb] p-6 rounded-3xl text-center max-w-sm w-full shadow-2xl">
+            <div id="modal-message" class="text-xl mb-6 text-[#cdd6f4] font-bold"></div>
+            <button onclick="document.getElementById('custom-modal').classList.add('hidden')" class="kawaii-btn kawaii-btn-primary py-3 px-8 text-lg w-full">
+                OK ! 🚀
+            </button>
+        </div>
+    </div>
+
+</div>
+
+<script>
+/**
+ * ARCHITECTURE CIBLE (Similaire à Flutter/Dart):
+ * - Models (Flashcard)
+ * - Services (StorageService, SRSService)
+ * - Controllers (AppController - gère l'état de l'UI)
+ */
+
+// --- MODELS ---
+class Flashcard {
+    constructor(id, front, back) {
+        this.id = id;
+        this.front = front;
+        this.back = back;
+        // Simplified SRS parameters (FSRS inspiration)
+        this.reps = 0;
+        this.interval = 0; // en minutes pour le proto
+        this.ease = 2.5; 
+        this.dueDate = new Date().getTime(); 
+    }
+}
+
+// --- SERVICES ---
+const StorageService = {
+    saveDeck: (deck) => {
+        localStorage.setItem('kawaii_math_deck_v2', JSON.stringify(deck));
+    },
+    loadDeck: () => {
+        const data = localStorage.getItem('kawaii_math_deck_v2');
+        return data ? JSON.parse(data) : [];
+    },
+    clear: () => localStorage.removeItem('kawaii_math_deck_v2')
+};
+
+// Algorithme d'espacement (Simplified SRS)
+const SRSService = {
+    /**
+     * Rating: 1 (Again), 2 (Hard), 3 (Good), 4 (Easy)
+     * Mini-FSRS: Ajuste la facilité et l'intervalle avec des multiplicateurs.
+     */
+    calculateNextReview: (card, rating) => {
+        card.reps += 1;
+        
+        if (rating === 1) {
+            card.interval = 1; // Revoir dans 1 minute
+            card.ease = Math.max(1.3, card.ease - 0.2);
+        } else if (rating === 2) {
+            card.interval = card.interval === 0 ? 5 : card.interval * 1.2;
+            card.ease = Math.max(1.3, card.ease - 0.15);
+        } else if (rating === 3) {
+            card.interval = card.interval === 0 ? 10 : (card.interval * card.ease);
+        } else if (rating === 4) {
+            card.interval = card.interval === 0 ? 15 : (card.interval * card.ease * 1.3);
+            card.ease += 0.15;
+        }
+
+        card.dueDate = new Date().getTime() + (card.interval * 60000);
+        return card;
+    }
+};
+
+// --- CONTROLLER ---
+const app = {
+    deck: [],
+    reviewQueue: [],
+    currentCardIndex: 0,
+    isFlipped: false,
+    isRandomOrder: false,
+
+    init: () => {
+        app.deck = StorageService.loadDeck();
+        if (app.deck.length === 0) {
+            // Charger les cartes par défaut
+            app.loadDefaultDeck();
+        }
+        app.updateDashboard();
+    },
+
+    toggleRandom: () => {
+        app.isRandomOrder = !app.isRandomOrder;
+        const btn = document.getElementById('btn-random');
+        if (app.isRandomOrder) {
+            btn.classList.remove('opacity-40');
+            app.showMessage("🔀 Mode Aléatoire ACTIVÉ : Les questions dues seront mélangées !");
+        } else {
+            btn.classList.add('opacity-40');
+            app.showMessage("⬇️ Mode Chronologique ACTIVÉ : Les questions les plus vieilles en premier.");
+        }
+    },
+
+    showMessage: (msg) => {
+        document.getElementById('modal-message').innerText = msg;
+        document.getElementById('custom-modal').classList.remove('hidden');
+    },
+
+    renderMath: (element) => {
+        renderMathInElement(element, {
+            delimiters: [
+                {left: '$$', right: '$$', display: true},
+                {left: '$', right: '$', display: false}
+            ],
+            throwOnError: false
+        });
+    },
+
+    loadDefaultDeck: () => {
+        const defaultRaw = "Valeurs remarquables du cercle (hors 0 et 1),1/2 | $\\sqrt{2}/2$ | $\\sqrt{3}/2$;sin(0),0;cos(0),1;tan(0),0;sin($\\pi/6$),1/2;cos($\\pi/6$),$\\sqrt{3}/2$;tan($\\pi/6$),$\\sqrt{3}/3$;sin($\\pi/4$),$\\sqrt{2}/2$;cos($\\pi/4$),$\\sqrt{2}/2$;tan($\\pi/4$),1;sin($\\pi/3$),$\\sqrt{3}/2$;cos($\\pi/3$),1/2;tan($\\pi/3$),$\\sqrt{3}$;sin($\\pi/2$),1;cos($\\pi/2$),0;tan($\\pi/2$),+\\infty;sin($\\pi$),0;cos($\\pi$),-1;tan($\\pi$),0;30°,$\\pi/6$;45°,$\\pi/4$;60°,$\\pi/3$;90°,$\\pi/2$;180°,$\\pi$;270°,3$\\pi/2$;360°,2$\\pi$;cos($\\pi/2 - x$)=?,sin($x$);sin($\\pi/2 - x$)=?,cos($x$);tan($\\pi/2 - x$)=?,1/tan($x$);Périodicité de sinus et cosinus (tours complets),2$\\pi$ périodiques (on peut rayer tous les multiples de 2$\\pi$);Ajout de $\\pi$ à un angle (demi-tour),Inverse le signe de la fonction (ex: $\\sin(x+\\pi) = -\\sin(x)$);Ajout ou retrait de $\\pi/2$ à un angle (quart de tour),Bascule les axes (le cosinus devient sinus et le sinus devient cosinus);Astuce pour les équations bicarrées (type $x^4 + x^2$),Penser au changement de variable $X = x^2$ (ou $X = e^x$, etc.) pour se ramener au second degré;Formule du discriminant ($\\Delta$),$\\Delta = b^2 - 4ac$;Formules des racines ($x_1$ et $x_2$) quand $\\Delta > 0$,$x_1 = (-b - \\sqrt{\\Delta}) / (2a)$ et $x_2 = (-b + \\sqrt{\\Delta}) / (2a)$;Cas particulier : $\\Delta = 0$,Une unique racine double : $x_0 = -b / (2a)$;Cas particulier : $\\Delta < 0$,Aucune solution réelle (ou deux solutions complexes conjuguées : $x = (-b \\pm i\\sqrt{-\\Delta}) / (2a)$);La règle d'or du produit matriciel,Il faut impérativement que le nombre de colonnes de la première matrice soit égal au nombre de lignes de la seconde matrice;Développement de Laplace (déterminant),Technique pour calculer un déterminant en développant selon une ligne ou une colonne : on multiplie chaque coefficient par son cofacteur (mineur affecté du signe du damier + - + / - + -);Préparation d'un grand déterminant avant Laplace ?,Créer un maximum de zéros sur une ligne/colonne via des combinaisons linéaires (ex: $L_1 = L_1 - 2L_2$);Comment inverser une matrice A à partir d'une équation type $A^2 = aA + bI$ ?,1. Isoler I / 2. Factoriser par A / 3. Le facteur obtenu est l'inverse $A^{-1}$;À quelle condition une matrice carrée est-elle inversible ?,Son déterminant doit être strictement différent de zéro (det(A) $\\neq$ 0);";
+        
+        app.deck = app.parseRawData(defaultRaw);
+        StorageService.saveDeck(app.deck);
+    },
+
+    parseRawData: (rawStr) => {
+        const newDeck = [];
+        const pairs = rawStr.split(';');
+        
+        pairs.forEach((pair, index) => {
+            if (!pair.trim()) return;
+            const firstCommaIdx = pair.indexOf(',');
+            if (firstCommaIdx > -1) {
+                const front = pair.substring(0, firstCommaIdx).trim();
+                const back = pair.substring(firstCommaIdx + 1).trim();
+                newDeck.push(new Flashcard(Date.now().toString() + index, front, back));
+            }
+        });
+        return newDeck;
+    },
+
+    getDueCards: () => {
+        const now = new Date().getTime();
+        return app.deck.filter(card => card.dueDate <= now);
+    },
+
+    updateDashboard: () => {
+        document.getElementById('stat-total').innerText = app.deck.length;
+        document.getElementById('stat-due').innerText = app.getDueCards().length;
+    },
+
+    switchView: (viewId) => {
+        document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+        document.getElementById(viewId).classList.remove('hidden');
+        
+        // Header mascot changes based on context
+        if (viewId === 'view-dashboard') {
+            app.updateDashboard();
+            document.getElementById('nav-mascot').innerText = "(◕‿◕)";
+        } else if (viewId === 'view-review' || viewId === 'view-qcm') {
+            document.getElementById('nav-mascot').innerText = "(ง'̀-'́)ง"; // Focus face
+        } else if (viewId === 'view-import') {
+            document.getElementById('nav-mascot').innerText = "(*^‿^*)";
+        }
+    },
+
+    importCards: () => {
+        const text = document.getElementById('import-text').value;
+        const newCards = app.parseRawData(text);
+        if (newCards.length > 0) {
+            app.deck = [...app.deck, ...newCards];
+            StorageService.saveDeck(app.deck);
+            app.showMessage(`⚡ YAY! ${newCards.length} cartes ajoutées !`);
+            document.getElementById('import-text').value = '';
+            app.switchView('view-dashboard');
+        } else {
+            app.showMessage("Oops! 😅 Le format n'a pas l'air bon. Vérifie les virgules et points-virgules !");
+        }
+    },
+
+    // --- MODE RÉVISION CLASSIQUE ---
+    startReview: () => {
+        let dueCards = app.getDueCards();
+        if (dueCards.length === 0) {
+            app.showMessage("✨ Bravo ! Tu as révisé toutes tes cartes pour le moment !");
+            return;
+        }
+        
+        // FSRS Triage : Si l'ordre aléatoire est activé, on mélange la file d'attente
+        if (app.isRandomOrder) {
+            app.reviewQueue = dueCards.sort(() => Math.random() - 0.5);
+        } else {
+            app.reviewQueue = dueCards.sort((a, b) => a.dueDate - b.dueDate);
+        }
+        
+        app.currentCardIndex = 0;
+        app.switchView('view-review');
+        app.showCurrentCard();
+    },
+
+    showCurrentCard: () => {
+        if (app.currentCardIndex >= app.reviewQueue.length) {
+            StorageService.saveDeck(app.deck);
+            app.showMessage("🎉 Session terminée ! Super boulot !");
+            app.switchView('view-dashboard');
+            return;
+        }
+
+        app.isFlipped = false;
+        const elCard = document.getElementById('flashcard');
+        elCard.classList.remove('flipped');
+        
+        document.getElementById('rating-controls').classList.add('hidden');
+        document.getElementById('flip-hint').classList.remove('hidden');
+
+        const card = app.reviewQueue[app.currentCardIndex];
+        document.getElementById('card-front-content').innerHTML = card.front;
+        document.getElementById('card-back-content').innerHTML = card.back;
+        
+        document.getElementById('review-counter').innerText = `Carte ${app.currentCardIndex + 1} / ${app.reviewQueue.length}`;
+        
+        app.renderMath(document.getElementById('flashcard'));
+    },
+
+    flipCard: () => {
+        if (app.isFlipped) return;
+        app.isFlipped = true;
+        document.getElementById('flashcard').classList.add('flipped');
+        
+        document.getElementById('flip-hint').classList.add('hidden');
+        setTimeout(() => {
+            document.getElementById('rating-controls').classList.remove('hidden');
+        }, 300);
+    },
+
+    rateCard: (rating) => {
+        const cardId = app.reviewQueue[app.currentCardIndex].id;
+        const deckIndex = app.deck.findIndex(c => c.id === cardId);
+        
+        if (deckIndex > -1) {
+            app.deck[deckIndex] = SRSService.calculateNextReview(app.deck[deckIndex], rating);
+        }
+
+        if (rating === 1) {
+            app.reviewQueue.push(app.reviewQueue[app.currentCardIndex]);
+        }
+
+        app.currentCardIndex++;
+        
+        const elCard = document.getElementById('flashcard');
+        elCard.style.transform = "rotateY(180deg) scale(0.95)";
+        setTimeout(() => {
+            elCard.style.transform = "";
+            app.showCurrentCard();
+        }, 150);
+    },
+
+    // --- MODE COLLES (QCM) ---
+    startQcm: () => {
+        let dueCards = app.getDueCards();
+        if (dueCards.length === 0) {
+            app.showMessage("✨ Aucun QCM en attente, repose-toi bien !");
+            return;
+        }
+
+        // FSRS Triage : Même logique que pour la révision classique
+        if (app.isRandomOrder) {
+            app.reviewQueue = dueCards.sort(() => Math.random() - 0.5);
+        } else {
+            app.reviewQueue = dueCards.sort((a, b) => a.dueDate - b.dueDate);
+        }
+
+        app.currentCardIndex = 0;
+        app.switchView('view-qcm');
+        app.showQcmCard();
+    },
+
+    showQcmCard: () => {
+        if (app.currentCardIndex >= app.reviewQueue.length) {
+            StorageService.saveDeck(app.deck);
+            app.showMessage("🎉 Session de Colles terminée !");
+            app.switchView('view-dashboard');
+            return;
+        }
+
+        const card = app.reviewQueue[app.currentCardIndex];
+        document.getElementById('qcm-counter').innerText = `Colle ${app.currentCardIndex + 1} / ${app.reviewQueue.length}`;
+        
+        const qContainer = document.getElementById('qcm-question');
+        qContainer.innerHTML = card.front;
+        
+        // Build Answers List
+        const answersContainer = document.getElementById('qcm-answers');
+        answersContainer.innerHTML = '';
+        
+        let answers = [card.back];
+        
+        // Find other unique wrong answers
+        let otherCards = app.deck.filter(c => c.back !== card.back);
+        let uniqueBacks = [...new Set(otherCards.map(c => c.back))];
+        
+        uniqueBacks.sort(() => 0.5 - Math.random()); // Shuffle
+        for (let i = 0; i < Math.min(3, uniqueBacks.length); i++) {
+            answers.push(uniqueBacks[i]);
+        }
+        
+        answers.sort(() => 0.5 - Math.random()); // Shuffle answers array
+        
+        answers.forEach(ans => {
+            const btn = document.createElement('button');
+            btn.className = "kawaii-btn kawaii-btn-secondary py-4 px-4 text-lg w-full text-left";
+            btn.innerHTML = ans;
+            btn.dataset.ans = ans; // To identify exact answer after KaTeX transform
+            
+            btn.onclick = () => app.handleQcmAnswer(btn, ans, card.back);
+            answersContainer.appendChild(btn);
+        });
+
+        app.renderMath(qContainer);
+        app.renderMath(answersContainer);
+    },
+
+    handleQcmAnswer: (btnElement, selected, correct) => {
+        const cardId = app.reviewQueue[app.currentCardIndex].id;
+        const deckIndex = app.deck.findIndex(c => c.id === cardId);
+        
+        // Disable all buttons to prevent multiple clicks
+        const allBtns = document.getElementById('qcm-answers').querySelectorAll('button');
+        allBtns.forEach(b => b.disabled = true);
+
+        if (selected === correct) {
+            // Correct (Rated 'Easy/Good' = 4)
+            btnElement.style.backgroundColor = 'var(--green)'; // Catppuccin Green
+            btnElement.style.borderColor = '#40a02b';
+            btnElement.style.color = '#11111b';
+            
+            if (deckIndex > -1) {
+                app.deck[deckIndex] = SRSService.calculateNextReview(app.deck[deckIndex], 4);
+            }
+        } else {
+            // Wrong (Rated 'Again' = 1)
+            btnElement.style.backgroundColor = 'var(--red)'; // Catppuccin Red
+            btnElement.style.borderColor = '#d20f39';
+            btnElement.style.color = '#11111b';
+            
+            if (deckIndex > -1) {
+                app.deck[deckIndex] = SRSService.calculateNextReview(app.deck[deckIndex], 1);
+            }
+            // Put it back at the end of the queue
+            app.reviewQueue.push(app.reviewQueue[app.currentCardIndex]);
+            
+            // Highlight the correct one
+            allBtns.forEach(b => {
+                if(b.dataset.ans === correct) {
+                    b.style.backgroundColor = 'var(--green)';
+                    b.style.borderColor = '#40a02b';
+                    b.style.color = '#11111b';
+                }
+            });
+        }
+        
+        // Wait a bit before moving to the next card
+        setTimeout(() => {
+            app.currentCardIndex++;
+            app.showQcmCard();
+        }, 1200);
+    }
+};
+
+// Initialisation au chargement de la page
+window.onload = app.init;
+
+</script>
+</body>
+</html>

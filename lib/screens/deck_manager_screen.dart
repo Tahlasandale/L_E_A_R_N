@@ -182,12 +182,15 @@ class DeckManagerScreen extends StatelessWidget {
                               children: [
                                 Row(
                                   children: [
-                                    Text(
-                                      deck.name,
-                                      style: const TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.w900,
-                                        color: Catppuccin.text,
+                                    Flexible(
+                                      child: Text(
+                                        deck.name,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w900,
+                                          color: Catppuccin.text,
+                                        ),
                                       ),
                                     ),
                                     const SizedBox(width: 8),

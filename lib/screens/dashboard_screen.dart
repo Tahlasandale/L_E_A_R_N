@@ -308,32 +308,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceAround,
                               children: [
-                                Column(
-                                  children: [
-                                    Text(
-                                      '${deckProvider.totalCardsCount}',
-                                      style: const TextStyle(
-                                        fontSize: 34,
-                                        fontWeight: FontWeight.w900,
-                                        color: Catppuccin.sky,
+                                Expanded(
+                                  child: Column(
+                                    children: [
+                                      Text(
+                                        '${deckProvider.totalCardsCount}',
+                                        style: const TextStyle(
+                                          fontSize: 34,
+                                          fontWeight: FontWeight.w900,
+                                          color: Catppuccin.sky,
+                                        ),
                                       ),
-                                    ),
-                                    const Text('Cartes au total', style: TextStyle(color: Catppuccin.subtext, fontSize: 13)),
-                                  ],
+                                      const Text('Total cartes', style: TextStyle(color: Catppuccin.subtext, fontSize: 13)),
+                                    ],
+                                  ),
                                 ),
                                 Container(width: 2, height: 40, color: Catppuccin.surface0),
-                                Column(
-                                  children: [
-                                    Text(
-                                      '${deckProvider.selectedDueCardsCount}',
-                                      style: const TextStyle(
-                                        fontSize: 34,
-                                        fontWeight: FontWeight.w900,
-                                        color: Catppuccin.blue,
+                                Expanded(
+                                  child: Column(
+                                    children: [
+                                      Text(
+                                        '${deckProvider.selectedDueCardsCount}',
+                                        style: const TextStyle(
+                                          fontSize: 34,
+                                          fontWeight: FontWeight.w900,
+                                          color: Catppuccin.blue,
+                                        ),
                                       ),
-                                    ),
-                                    const Text('À réviser (sélection)', style: TextStyle(color: Catppuccin.subtext, fontSize: 13)),
-                                  ],
+                                      const Text('À réviser', style: TextStyle(color: Catppuccin.subtext, fontSize: 13)),
+                                    ],
+                                  ),
                                 ),
                               ],
                             ),
@@ -346,9 +350,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
-                            'Paquets à réviser :',
-                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Catppuccin.text),
+                          const Expanded(
+                            child: Text(
+                              'Paquets à réviser :',
+                              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Catppuccin.text),
+                            ),
                           ),
                           Row(
                             children: [

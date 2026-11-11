@@ -9,6 +9,12 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/Tahlasandale/L_E_A_R_N/releases/download/v1.0.0/Kawaii-Flashcards-v1.0.0.apk">
+    <img src="https://img.shields.io/badge/Download-APK%20Android%20(v1.0.0)-89B4FA?style=for-the-badge&logo=android&logoColor=11111B" alt="Download APK" />
+  </a>
+</p>
+
+<p align="center">
   <img src="https://img.shields.io/badge/Flutter-3.47.7-02569B?logo=flutter&logoColor=white" alt="Flutter" />
   <img src="https://img.shields.io/badge/Dart-3.13.5-0175C2?logo=dart&logoColor=white" alt="Dart" />
   <img src="https://img.shields.io/badge/Database-Isar%20NoSQL-4A154B" alt="Isar" />
@@ -17,6 +23,29 @@
   <img src="https://img.shields.io/badge/Tests-23%2F23%20Passing-A6E3A1" alt="Tests" />
   <img src="https://img.shields.io/badge/License-MIT-fab387" alt="License" />
 </p>
+
+---
+
+## 📱 Aperçu de l'Application
+
+<table align="center">
+  <tr>
+    <td align="center"><strong>Tableau de Bord & Chips</strong></td>
+    <td align="center"><strong>Révision Classique 3D Flip</strong></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/dashboard.png" width="300" alt="Dashboard Screen" /></td>
+    <td><img src="docs/screenshots/review.png" width="300" alt="Review Screen 3D Flip" /></td>
+  </tr>
+  <tr>
+    <td align="center"><strong>Mode Colles (QCM 2x2)</strong></td>
+    <td align="center"><strong>Gestionnaire de Paquets</strong></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/qcm.png" width="300" alt="QCM Screen 2x2" /></td>
+    <td><img src="docs/screenshots/decks.png" width="300" alt="Decks Screen" /></td>
+  </tr>
+</table>
 
 ---
 
@@ -104,11 +133,11 @@ flowchart TD
 
 ## 🚀 Installation & Lancement
 
-### Prérequis
-- Flutter SDK 3.24+ (testé et validé sur Flutter 3.47.7 / Dart 3.13.5).
-- Android SDK ou environnement de bureau Linux / Web.
+### 📦 Télécharger l'APK direct
+Vous pouvez télécharger directement le binaire Android pré-compilé :  
+👉 **[Télécharger Kawaii-Flashcards-v1.0.0.apk](https://github.com/Tahlasandale/L_E_A_R_N/releases/download/v1.0.0/Kawaii-Flashcards-v1.0.0.apk)**
 
-### Cloner et installer les dépendances
+### Cloner et compiler depuis les sources
 ```bash
 git clone https://github.com/Tahlasandale/L_E_A_R_N.git
 cd L_E_A_R_N
@@ -119,13 +148,13 @@ flutter pub get
 ```bash
 flutter test
 ```
-*Résultat attendu : 23/23 tests réussis.*
+*Résultat : 23/23 tests réussis.*
 
 ### Lancer l'analyse statique
 ```bash
 flutter analyze
 ```
-*Résultat attendu : No issues found!*
+*Résultat : No issues found!*
 
 ### Lancer l'application
 ```bash

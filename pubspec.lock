@@ -258,7 +258,7 @@ packages:
     source: hosted
     version: "7.0.1"
   file_picker:
-    dependency: "direct dev"
+    dependency: "direct main"
     description:
       name: file_picker
       sha256: "079dc46b753abbddb7f77cd87e6ed9ecc62902580707514568321bdf8e050a86"
@@ -319,7 +319,7 @@ packages:
     source: hosted
     version: "6.0.0"
   flutter_local_notifications:
-    dependency: "direct dev"
+    dependency: "direct main"
     description:
       name: flutter_local_notifications
       sha256: "58f9ea245d7194363c05f7a012bbc73291736c2d8b5f555a8e0ea3f9121868b4"
@@ -390,7 +390,7 @@ packages:
     source: hosted
     version: "2.2.0"
   google_fonts:
-    dependency: "direct dev"
+    dependency: "direct main"
     description:
       name: google_fonts
       sha256: fdbbfbbb1a62f376ab29fa9627561d389751fb984da0b630ce3326e272911c8a
@@ -454,7 +454,7 @@ packages:
     source: hosted
     version: "1.1.0"
   isar:
-    dependency: "direct dev"
+    dependency: "direct main"
     description:
       name: isar
       sha256: "99165dadb2cf2329d3140198363a7e7bff9bbd441871898a87e26914d25cf1ea"
@@ -462,7 +462,7 @@ packages:
     source: hosted
     version: "3.1.0+1"
   isar_flutter_libs:
-    dependency: "direct dev"
+    dependency: "direct main"
     description:
       name: isar_flutter_libs
       sha256: bc6768cc4b9c61aabff77152e7f33b4b17d2fc93134f7af1c3dd51500fe8d5e8
@@ -630,7 +630,7 @@ packages:
     source: hosted
     version: "1.9.1"
   path_provider:
-    dependency: "direct dev"
+    dependency: "direct main"
     description:
       name: path_provider
       sha256: a7f4874f987173da295a61c181b8ee71dab59b332a486b391babf26a1b884825
@@ -710,7 +710,7 @@ packages:
     source: hosted
     version: "1.5.3"
   provider:
-    dependency: "direct dev"
+    dependency: "direct main"
     description:
       name: provider
       sha256: "4e82183fa20e5ca25703ead7e05de9e4cceed1fbd1eadc1ac3cb6f565a09f272"
@@ -742,7 +742,7 @@ packages:
     source: hosted
     version: "0.6.0"
   share_plus:
-    dependency: "direct dev"
+    dependency: "direct main"
     description:
       name: share_plus
       sha256: db40767f130189d53f3ae8a6393c217ff4a492da1baff718a9873679c0c00224
@@ -851,7 +851,7 @@ packages:
     source: hosted
     version: "2.1.6"
   timezone:
-    dependency: "direct dev"
+    dependency: "direct main"
     description:
       name: timezone
       sha256: "9f4e5a1a0e4fef7dd3424842c0575db01bfb7a11730e8d55753fcd5c5c98767b"

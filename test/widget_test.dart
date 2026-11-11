@@ -1,30 +1,76 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import 'package:learn_flashcards/main.dart';
+import 'package:learn_flashcards/widgets/adaptive_text.dart';
+import 'package:learn_flashcards/widgets/flip_card_3d.dart';
+import 'package:learn_flashcards/widgets/kawaii_button.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets('KawaiiButton réagit au clic et affiche son contenu', (WidgetTester tester) async {
+    bool clicked = false;
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: KawaiiButton(
+              onPressed: () => clicked = true,
+              child: const Text('Bouton Test'),
+            ),
+          ),
+        ),
+      ),
+    );
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+    expect(find.text('Bouton Test'), findsOneWidget);
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    await tester.tap(find.text('Bouton Test'));
+    await tester.pumpAndSettle();
+
+    expect(clicked, isTrue);
+  });
+
+  testWidgets('FlipCard3D affiche la question et déclenche le retournement', (WidgetTester tester) async {
+    bool flipped = false;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: FlipCard3D(
+              frontText: 'Question Front',
+              backText: 'Réponse Back',
+              isFlipped: false,
+              onFlip: () => flipped = true,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Question Front'), findsOneWidget);
+    expect(find.text('QUESTION'), findsOneWidget);
+
+    // Tap pour retourner
+    await tester.tap(find.text('Question Front'));
+    await tester.pumpAndSettle();
+
+    expect(flipped, isTrue);
+  });
+
+  testWidgets('AdaptiveText affiche le texte sur une ligne sans déborder', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: SizedBox(
+              width: 100,
+              child: AdaptiveText('Texte très long pour tester l\'ajustement'),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Texte très long pour tester l\'ajustement'), findsOneWidget);
   });
 }

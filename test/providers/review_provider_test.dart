@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:learn_flashcards/models/deck.dart';
 import 'package:learn_flashcards/models/flashcard.dart';
 import 'package:learn_flashcards/providers/review_provider.dart';
 

@@ -33,7 +33,7 @@ class NotificationService {
     );
 
     try {
-      await _notificationsPlugin.initialize(initSettings);
+      await _notificationsPlugin.initialize(settings: initSettings);
       _isInitialized = true;
     } catch (e) {
       debugPrint('Notification init exception: $e');
@@ -67,10 +67,10 @@ class NotificationService {
     );
 
     await _notificationsPlugin.show(
-      0,
-      'Kawaii Flashcards ⚡',
-      '(◕‿◕) Les notifications fonctionnent à merveille !',
-      notificationDetails,
+      id: 0,
+      title: 'Kawaii Flashcards ⚡',
+      body: '(◕‿◕) Les notifications fonctionnent à merveille !',
+      notificationDetails: notificationDetails,
     );
   }
 
@@ -94,7 +94,6 @@ class NotificationService {
 
     // Si le seuil est déjà dépassé maintenant, ou si la date est passée
     if (criticalDate.isBefore(now)) {
-      // Déjà critique : on peut afficher immédiatement ou laisser l'utilisateur ouvrir
       return;
     }
 
@@ -110,14 +109,12 @@ class NotificationService {
       );
 
       await _notificationsPlugin.zonedSchedule(
-        1,
-        'Kawaii Flashcards ⚡',
-        "(ง'̀-'́)ง $threshold cartes sont prêtes pour ta révision !",
-        scheduledTz,
-        const NotificationDetails(android: androidDetails),
+        id: 1,
+        title: 'Kawaii Flashcards ⚡',
+        body: "(ง'̀-'́)ง $threshold cartes sont prêtes pour ta révision !",
+        scheduledDate: scheduledTz,
+        notificationDetails: const NotificationDetails(android: androidDetails),
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime,
       );
     } catch (e) {
       debugPrint('Schedule notification error: $e');

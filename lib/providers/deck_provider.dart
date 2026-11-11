@@ -146,11 +146,15 @@ class DeckProvider with ChangeNotifier {
     return cards.length;
   }
 
-  /// Exporte un paquet en CSV
-  Future<String> exportDeckCsv(Deck deck, {String delimiter = ','}) async {
+  /// Exporte un paquet en CSV avec séparateurs configurables
+  Future<String> exportDeckCsv(
+    Deck deck, {
+    String delimiter = ',',
+    String lineEnding = '\n',
+  }) async {
     await deck.cards.load();
     final items = deck.cards.map((c) => CsvCardItem(front: c.front, back: c.back)).toList();
-    return CsvService.exportCsv(items, delimiter: delimiter);
+    return CsvService.exportCsv(items, delimiter: delimiter, lineEnding: lineEnding);
   }
 
   /// Total de cartes tous paquets confondus

@@ -93,6 +93,10 @@ class CsvService {
       }
     }
 
+    if (lineEnding == ';') {
+      buffer.write(';');
+    }
+
     return buffer.toString();
   }
 

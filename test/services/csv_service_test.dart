@@ -84,5 +84,15 @@ void main() {
       final csv = CsvService.exportCsv(cards, delimiter: ',');
       expect(csv, 'Valeurs remarquables,"1/2, 2/2, 3/2"');
     });
+
+    test('Exporte avec séparateur de cartes personnalisé (ex: point-virgule comme le prototype)', () {
+      final cards = [
+        CsvCardItem(front: 'sin(0)', back: '0'),
+        CsvCardItem(front: 'cos(0)', back: '1'),
+      ];
+
+      final csv = CsvService.exportCsv(cards, delimiter: ',', lineEnding: ';');
+      expect(csv, "sin(0),0;cos(0),1;");
+    });
   });
 }

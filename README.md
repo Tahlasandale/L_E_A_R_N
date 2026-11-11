@@ -77,11 +77,12 @@ Sélectionnez en un instant un ou plusieurs paquets directement depuis l'écran 
 ### 🔋 Notifications Prédictives Zéro-Polling
 Aucun service ne tourne en continu en arrière-plan. Lorsque l'application est mise en pause ou fermée, elle calcule dynamiquement l'instant exact où le seuil critique d'oubli FSRS sera atteint et planifie une notification locale précise (`flutter_local_notifications`).
 
-### 📥 Import / Export CSV Personnalisé par Paquet
-- Format 2 colonnes concis : `Question` et `Réponse` (cartes brutes sur une seule ligne).
-- Délimiteurs de champ au choix : `,` (virgule), `;` (point-virgule), `\t` (tabulation), `|` (pipe).
-- Import par collage de texte direct ou sélection de fichier `.csv` / `.txt`.
-- Export et partage immédiat via la feuille native de partage.
+### 📥 Import / Export CSV Multi-Séparateurs par Paquet
+- **Format 2 colonnes concis** : `Question` et `Réponse` (cartes brutes sur une seule ligne).
+- **Séparateur Question ↔ Réponse configurable** : virgule (`,`), point-virgule (`;`), tabulation (`\t`), pipe (`|`) ou chaîne personnalisée.
+- **Séparateur entre Cartes configurable** : saut de ligne standard (`\n`), point-virgule (`;` - format exact du prototype web), double saut (`\n\n`), tabulation (`\t`), pipe (`|`) ou chaîne personnalisée.
+- **Import flexible** : par collage direct dans le champ dédié ou sélection d'un fichier `.csv` / `.txt`.
+- **Export & Partage** : prévisualisation en direct du format et partage immédiat via la feuille native de l'OS.
 
 ### 🎨 Design Catppuccin Mocha & Retours Haptiques
 - Palette officielle **Catppuccin Mocha** sombre avec typographie **Nunito**.
@@ -148,7 +149,7 @@ flutter pub get
 ```bash
 flutter test
 ```
-*Résultat : 23/23 tests réussis.*
+*Résultat : 24/24 tests réussis.*
 
 ### Lancer l'analyse statique
 ```bash

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:isar/isar.dart';
 import 'flashcard.dart';
 
@@ -18,8 +19,16 @@ class Deck {
   @enumerated
   late FsrsMode mode = FsrsMode.intensiveMinutes;
 
+  bool isActive = true;
+
   late DateTime createdAt = DateTime.now();
 
   @Backlink(to: 'deck')
   final cards = IsarLinks<Flashcard>();
+
+  @ignore
+  final List<Flashcard> webCards = [];
+
+  @ignore
+  Iterable<Flashcard> get allCards => kIsWeb ? webCards : cards;
 }

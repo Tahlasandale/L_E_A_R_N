@@ -1,4 +1,5 @@
 import 'dart:math';
+import '../models/flashcard.dart';
 
 /// Résultat du calcul de prochaine révision FSRS
 class FsrsResult {
@@ -118,5 +119,36 @@ class FsrsService {
     final sortedDates = List<DateTime>.from(dueDates)..sort();
     // Le seuil est atteint à la date de la [threshold - 1]-ième carte due
     return sortedDates[threshold - 1];
+  }
+
+  /// Transpose intelligemment les métriques FSRS d'une carte lors d'un changement de mode de paquet.
+  /// - Colles (Minutes) -> Long Terme (Jours) :
+  ///   Si la carte est nouvelle ou peu révisée (< 5 min), interval = 0, dueDate = now.
+  ///   Si elle est consolidée en session intensive (reps >= 2), elle démarre à 1 ou 2 jours.
+  ///   La facilité (ease) acquise est rigoureusement conservée.
+  /// - Long Terme (Jours) -> Colles (Minutes) :
+  ///   Pour un bachotage immédiat, l'intervalle est réinitialisé à 0 et dueDate = now,
+  ///   afin que toutes les cartes soient immédiatement révisables, tout en conservant
+  ///   la facilité acquise (ease) pour que les bonnes réponses grimpent vite.
+  static void transposeCardMode({
+    required Flashcard card,
+    required bool toLongTermDays,
+    DateTime? referenceTime,
+  }) {
+    final now = referenceTime ?? DateTime.now();
+
+    if (toLongTermDays) {
+      if (card.reps == 0 || card.interval < 5.0) {
+        card.interval = 0.0;
+        card.dueDate = now;
+      } else {
+        final double days = card.reps >= 3 ? min(3.0, (card.reps / 2).roundToDouble()) : 1.0;
+        card.interval = days;
+        card.dueDate = now.add(Duration(days: days.round()));
+      }
+    } else {
+      card.interval = 0.0;
+      card.dueDate = now;
+    }
   }
 }

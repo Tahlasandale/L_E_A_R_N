@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Kawaii Flashcards Logo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@800;900;1000&family=Fredoka+One&family=Mochiy+Pop+One&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      width: 1024px;
+      height: 1024px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #181926; /* Catppuccin Crust */
+      font-family: 'Nunito', sans-serif;
+      overflow: hidden;
+    }
+
+    .logo-container {
+      width: 900px;
+      height: 900px;
+      background: linear-gradient(145deg, #24273a 0%, #1e2030 100%); /* Base to Mantle */
+      border-radius: 180px;
+      border: 18px solid #363a4f; /* Surface0 */
+      box-shadow: 0 40px 80px rgba(0, 0, 0, 0.6), inset 0 4px 12px rgba(255, 255, 255, 0.08);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    /* 3D Neo-brutalist Main Card */
+    .flashcard {
+      width: 660px;
+      height: 520px;
+      background: #1e2030; /* Mantle */
+      border-radius: 64px;
+      border: 14px solid #8aadf4; /* Blue */
+      box-shadow: 24px 24px 0px #11111b; /* Neo-brutalist shadow */
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      padding: 30px;
+      transform: rotate(-2deg);
+      transition: all 0.3s ease;
+    }
+
+    /* Card Top Chip */
+    .card-chip {
+      position: absolute;
+      top: -28px;
+      background: #c6a0f6; /* Mauve */
+      border: 6px solid #11111b;
+      color: #11111b;
+      font-weight: 900;
+      font-size: 26px;
+      padding: 8px 32px;
+      border-radius: 30px;
+      letter-spacing: 2px;
+      box-shadow: 6px 6px 0px #11111b;
+      text-transform: uppercase;
+    }
+
+    /* Sparkle Lightning Accent */
+    .sparkle {
+      font-size: 80px;
+      filter: drop-shadow(0 0 16px rgba(238, 212, 159, 0.8));
+      margin-bottom: 8px;
+      animation: pulse 2s infinite;
+    }
+
+    /* Kawaii Face */
+    .mascot-face {
+      font-size: 84px;
+      font-weight: 1000;
+      color: #91d7e3; /* Sky */
+      text-shadow: 0 6px 20px rgba(145, 215, 227, 0.5);
+      letter-spacing: -2px;
+      margin-bottom: 12px;
+      font-family: 'Fredoka One', 'Nunito', sans-serif;
+    }
+
+    .cheeks {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+    }
+
+    .blush {
+      width: 24px;
+      height: 14px;
+      background: #f5bde6; /* Pink */
+      border-radius: 50%;
+      opacity: 0.85;
+      display: inline-block;
+      box-shadow: 0 0 12px #f5bde6;
+    }
+
+    /* Subtitle inside card */
+    .card-footer-text {
+      color: #b7bdf8; /* Lavender */
+      font-size: 26px;
+      font-weight: 900;
+      letter-spacing: 1px;
+    }
+
+    /* Brand Name */
+    .brand-title {
+      margin-top: 48px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .brand-main {
+      font-size: 58px;
+      font-weight: 1000;
+      color: #cad3f5; /* Text */
+      letter-spacing: 3px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .brand-kawaii {
+      color: #f5bde6; /* Pink */
+      text-shadow: 0 4px 16px rgba(245, 189, 230, 0.4);
+    }
+
+    .brand-cards {
+      color: #8aadf4; /* Blue */
+    }
+
+    .brand-badge {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 10px;
+    }
+
+    .tag {
+      background: #363a4f;
+      border: 4px solid #11111b;
+      padding: 6px 20px;
+      border-radius: 20px;
+      font-size: 20px;
+      font-weight: 900;
+      color: #a6da95; /* Green */
+      box-shadow: 4px 4px 0px #11111b;
+    }
+
+    .tag-fsrs {
+      color: #eed49f; /* Yellow */
+    }
+  </style>
+</head>
+<body>
+  <div class="logo-container">
+    <div class="flashcard">
+      <div class="card-chip">FLASHCARD ⚡</div>
+      <div class="sparkle">⚡</div>
+      <div class="cheeks">
+        <span class="blush"></span>
+        <div class="mascot-face">\(^ヮ^)/</div>
+        <span class="blush"></span>
+      </div>
+      <div class="card-footer-text">Répétition Espacée FSRS</div>
+    </div>
+
+    <div class="brand-title">
+      <div class="brand-main">
+        <span class="brand-kawaii">KAWAII</span>
+        <span class="brand-cards">FLASHCARDS</span>
+      </div>
+      <div class="brand-badge">
+        <span class="tag tag-fsrs">🧠 Moteur FSRS</span>
+        <span class="tag">📝 Mode Colles 2x2</span>
+        <span class="tag">🎨 Catppuccin</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

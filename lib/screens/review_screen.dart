@@ -102,9 +102,35 @@ class ReviewScreen extends StatelessWidget {
             fontSize: 18,
           ),
         ),
-        actions: const [
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16.0),
+        actions: [
+          IconButton(
+            icon: Icon(
+              Icons.shuffle_rounded,
+              color: reviewProvider.isRandomOrder ? Catppuccin.mauve : Catppuccin.overlay,
+            ),
+            tooltip: reviewProvider.isRandomOrder ? 'Ordre aléatoire actif' : 'Activer l\'ordre aléatoire',
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              reviewProvider.toggleRandomOrder();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  backgroundColor: Catppuccin.mantle,
+                  duration: const Duration(milliseconds: 900),
+                  content: Text(
+                    reviewProvider.isRandomOrder
+                        ? '🔀 Mode Aléatoire ACTIVÉ !'
+                        : '⏱️ Tri FSRS rétabli !',
+                    style: TextStyle(
+                      color: reviewProvider.isRandomOrder ? Catppuccin.mauve : Catppuccin.sky,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 14.0),
             child: Center(
               child: Text(
                 "(ง'̀-'́)ง",

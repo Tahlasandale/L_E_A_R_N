@@ -8,7 +8,8 @@ import 'deck_manager_screen.dart';
 import 'settings_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
-  const MainNavigationScreen({super.key});
+  final int initialIndex;
+  const MainNavigationScreen({super.key, this.initialIndex = 0});
 
   @override
   State<MainNavigationScreen> createState() => _MainNavigationScreenState();
@@ -16,7 +17,7 @@ class MainNavigationScreen extends StatefulWidget {
 
 class _MainNavigationScreenState extends State<MainNavigationScreen>
     with WidgetsBindingObserver {
-  int _currentIndex = 0;
+  late int _currentIndex;
   late final PageController _pageController;
 
   late final List<Widget> _screens = const [
@@ -28,6 +29,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
   @override
   void initState() {
     super.initState();
+    _currentIndex = widget.initialIndex;
     _pageController = PageController(initialPage: _currentIndex);
     WidgetsBinding.instance.addObserver(this);
     // Charger les paquets au démarrage
@@ -46,11 +48,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused || state == AppLifecycleState.detached) {
-      // Lorsque l'application passe en arrière-plan, programmer la notification prédictive
+      // Lorsque l'application passe en arrière-plan, programmer la notification prédictive (uniquement sur paquets actifs)
       final provider = Provider.of<DeckProvider>(context, listen: false);
-      provider.getAllCardsPool().then((cards) {
-        NotificationService().scheduleOnAppPause(allCards: cards);
-      });
+      final activeCards = provider.getActiveCardsPool();
+      NotificationService().scheduleOnAppPause(allCards: activeCards);
     }
   }
 

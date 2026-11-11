@@ -15,21 +15,26 @@ extension GetDeckCollection on Isar {
 
 const DeckSchema = CollectionSchema(
   name: r'Deck',
-  id: 4151526915841928397,
+  id: 333959313173709,
   properties: {
     r'createdAt': PropertySchema(
       id: 0,
       name: r'createdAt',
       type: IsarType.dateTime,
     ),
-    r'mode': PropertySchema(
+    r'isActive': PropertySchema(
       id: 1,
+      name: r'isActive',
+      type: IsarType.bool,
+    ),
+    r'mode': PropertySchema(
+      id: 2,
       name: r'mode',
       type: IsarType.byte,
       enumMap: _DeckmodeEnumValueMap,
     ),
     r'name': PropertySchema(
-      id: 2,
+      id: 3,
       name: r'name',
       type: IsarType.string,
     )
@@ -41,7 +46,7 @@ const DeckSchema = CollectionSchema(
   idName: r'id',
   indexes: {
     r'name': IndexSchema(
-      id: 879695947855722453,
+      id: 368120611633109,
       name: r'name',
       unique: true,
       replace: false,
@@ -56,7 +61,7 @@ const DeckSchema = CollectionSchema(
   },
   links: {
     r'cards': LinkSchema(
-      id: 5709013945504635686,
+      id: 701417812532006,
       name: r'cards',
       target: r'Flashcard',
       single: false,
@@ -87,8 +92,9 @@ void _deckSerialize(
   Map<Type, List<int>> allOffsets,
 ) {
   writer.writeDateTime(offsets[0], object.createdAt);
-  writer.writeByte(offsets[1], object.mode.index);
-  writer.writeString(offsets[2], object.name);
+  writer.writeBool(offsets[1], object.isActive);
+  writer.writeByte(offsets[2], object.mode.index);
+  writer.writeString(offsets[3], object.name);
 }
 
 Deck _deckDeserialize(
@@ -100,9 +106,10 @@ Deck _deckDeserialize(
   final object = Deck();
   object.createdAt = reader.readDateTime(offsets[0]);
   object.id = id;
-  object.mode = _DeckmodeValueEnumMap[reader.readByteOrNull(offsets[1])] ??
+  object.isActive = reader.readBool(offsets[1]);
+  object.mode = _DeckmodeValueEnumMap[reader.readByteOrNull(offsets[2])] ??
       FsrsMode.intensiveMinutes;
-  object.name = reader.readString(offsets[2]);
+  object.name = reader.readString(offsets[3]);
   return object;
 }
 
@@ -116,9 +123,11 @@ P _deckDeserializeProp<P>(
     case 0:
       return (reader.readDateTime(offset)) as P;
     case 1:
+      return (reader.readBool(offset)) as P;
+    case 2:
       return (_DeckmodeValueEnumMap[reader.readByteOrNull(offset)] ??
           FsrsMode.intensiveMinutes) as P;
-    case 2:
+    case 3:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -425,6 +434,15 @@ extension DeckQueryFilter on QueryBuilder<Deck, Deck, QFilterCondition> {
     });
   }
 
+  QueryBuilder<Deck, Deck, QAfterFilterCondition> isActiveEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'isActive',
+        value: value,
+      ));
+    });
+  }
+
   QueryBuilder<Deck, Deck, QAfterFilterCondition> modeEqualTo(FsrsMode value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -679,6 +697,18 @@ extension DeckQuerySortBy on QueryBuilder<Deck, Deck, QSortBy> {
     });
   }
 
+  QueryBuilder<Deck, Deck, QAfterSortBy> sortByIsActive() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isActive', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Deck, Deck, QAfterSortBy> sortByIsActiveDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isActive', Sort.desc);
+    });
+  }
+
   QueryBuilder<Deck, Deck, QAfterSortBy> sortByMode() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'mode', Sort.asc);
@@ -729,6 +759,18 @@ extension DeckQuerySortThenBy on QueryBuilder<Deck, Deck, QSortThenBy> {
     });
   }
 
+  QueryBuilder<Deck, Deck, QAfterSortBy> thenByIsActive() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isActive', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Deck, Deck, QAfterSortBy> thenByIsActiveDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isActive', Sort.desc);
+    });
+  }
+
   QueryBuilder<Deck, Deck, QAfterSortBy> thenByMode() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'mode', Sort.asc);
@@ -761,6 +803,12 @@ extension DeckQueryWhereDistinct on QueryBuilder<Deck, Deck, QDistinct> {
     });
   }
 
+  QueryBuilder<Deck, Deck, QDistinct> distinctByIsActive() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'isActive');
+    });
+  }
+
   QueryBuilder<Deck, Deck, QDistinct> distinctByMode() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'mode');
@@ -785,6 +833,12 @@ extension DeckQueryProperty on QueryBuilder<Deck, Deck, QQueryProperty> {
   QueryBuilder<Deck, DateTime, QQueryOperations> createdAtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'createdAt');
+    });
+  }
+
+  QueryBuilder<Deck, bool, QQueryOperations> isActiveProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'isActive');
     });
   }
 

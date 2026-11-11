@@ -45,6 +45,27 @@ class ReviewProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  /// Bascule l'ordre aléatoire en direct durant la session
+  /// Conserve la carte courante affichée et mélange/réordonne la suite de la file
+  void toggleRandomOrder() {
+    _isRandomOrder = !_isRandomOrder;
+    if (_reviewQueue.isNotEmpty && _currentIndex < _reviewQueue.length) {
+      final current = _reviewQueue[_currentIndex];
+      final remaining = _reviewQueue.sublist(_currentIndex + 1);
+      if (_isRandomOrder) {
+        remaining.shuffle();
+      } else {
+        remaining.sort((a, b) => a.dueDate.compareTo(b.dueDate));
+      }
+      _reviewQueue = [
+        ..._reviewQueue.sublist(0, _currentIndex),
+        current,
+        ...remaining,
+      ];
+    }
+    notifyListeners();
+  }
+
   /// Retourne la carte
   void flipCard() {
     if (_isFlipped) return;

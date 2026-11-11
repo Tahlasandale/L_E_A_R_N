@@ -8,6 +8,7 @@ class AdaptiveText extends StatelessWidget {
   final FontWeight fontWeight;
   final Color color;
   final TextAlign textAlign;
+  final int? maxLines;
 
   const AdaptiveText(
     this.text, {
@@ -17,23 +18,51 @@ class AdaptiveText extends StatelessWidget {
     this.fontWeight = FontWeight.w800,
     this.color = Catppuccin.text,
     this.textAlign = TextAlign.center,
+    this.maxLines = 1,
   });
 
   @override
   Widget build(BuildContext context) {
-    return FittedBox(
-      fit: BoxFit.scaleDown,
-      alignment: Alignment.center,
-      child: Text(
-        text,
-        maxLines: 1,
-        textAlign: textAlign,
-        style: TextStyle(
-          fontSize: maxFontSize,
-          fontWeight: fontWeight,
-          color: color,
+    if (maxLines == 1) {
+      return FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.center,
+        child: Text(
+          text,
+          maxLines: 1,
+          textAlign: textAlign,
+          style: TextStyle(
+            fontSize: maxFontSize,
+            fontWeight: fontWeight,
+            color: color,
+          ),
         ),
-      ),
+      );
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxWidth = constraints.maxWidth.isFinite ? constraints.maxWidth : 400.0;
+        return FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.center,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: maxWidth),
+            child: Text(
+              text,
+              maxLines: maxLines,
+              softWrap: true,
+              textAlign: textAlign,
+              style: TextStyle(
+                fontSize: maxFontSize,
+                fontWeight: fontWeight,
+                color: color,
+                height: 1.3,
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

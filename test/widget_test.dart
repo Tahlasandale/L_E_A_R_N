@@ -89,6 +89,27 @@ void main() {
     expect(find.text('Texte très long pour tester l\'ajustement'), findsOneWidget);
   });
 
+  testWidgets('AdaptiveText supporte les retours à la ligne avec maxLines > 1', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: SizedBox(
+              width: 200,
+              height: 100,
+              child: AdaptiveText(
+                'Question mathématique avec formule longue',
+                maxLines: 3,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Question mathématique avec formule longue'), findsOneWidget);
+  });
+
   testWidgets('MainNavigationScreen permet de naviguer au swipe entre Accueil, Mes Paquets et Réglages', (WidgetTester tester) async {
     final fakeStorage = _FakeStorageService();
 

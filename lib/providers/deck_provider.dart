@@ -3,6 +3,7 @@ import 'package:isar/isar.dart';
 import '../models/deck.dart';
 import '../models/flashcard.dart';
 import '../services/csv_service.dart';
+import '../services/fsrs_service.dart';
 import '../services/storage_service.dart';
 
 class DeckProvider with ChangeNotifier {
@@ -15,6 +16,7 @@ class DeckProvider with ChangeNotifier {
   DeckProvider(this._storage);
 
   List<Deck> get decks => _decks;
+  List<Deck> get activeDecks => _decks.where((d) => d.isActive).toList();
   Set<Id> get selectedDeckIds => _selectedDeckIds;
   bool get isLoading => _isLoading;
 
@@ -25,9 +27,13 @@ class DeckProvider with ChangeNotifier {
 
     _decks = await _storage.getAllDecks();
 
-    // Par défaut, si aucun paquet n'est sélectionné, sélectionner tous les paquets
+    // Par défaut, si aucun paquet n'est sélectionné, sélectionner tous les paquets actifs
     if (_selectedDeckIds.isEmpty && _decks.isNotEmpty) {
-      _selectedDeckIds.addAll(_decks.map((d) => d.id));
+      _selectedDeckIds.addAll(_decks.where((d) => d.isActive).map((d) => d.id));
+    } else {
+      // Nettoyer les paquets inactifs ou supprimés de la sélection
+      final activeIds = _decks.where((d) => d.isActive).map((d) => d.id).toSet();
+      _selectedDeckIds.retainAll(activeIds);
     }
 
     _isLoading = false;
@@ -44,10 +50,10 @@ class DeckProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  /// Sélectionne tous les paquets
+  /// Sélectionne tous les paquets actifs
   void selectAllDecks() {
     _selectedDeckIds.clear();
-    _selectedDeckIds.addAll(_decks.map((d) => d.id));
+    _selectedDeckIds.addAll(_decks.where((d) => d.isActive).map((d) => d.id));
     notifyListeners();
   }
 
@@ -55,6 +61,38 @@ class DeckProvider with ChangeNotifier {
   void clearSelection() {
     _selectedDeckIds.clear();
     notifyListeners();
+  }
+
+  /// Active ou désactive un paquet (inactif = non compté dans total, rappels FSRS et accueil)
+  Future<void> toggleDeckActive(Deck deck) async {
+    deck.isActive = !deck.isActive;
+    if (!deck.isActive) {
+      _selectedDeckIds.remove(deck.id);
+    }
+    await _storage.updateDeck(deck);
+    await loadDecks();
+  }
+
+  /// Bascule rapidement le mode d'un paquet (Colles <-> Long Terme) avec transposition FSRS intelligente
+  Future<void> switchDeckMode(Deck deck, FsrsMode newMode) async {
+    if (deck.mode == newMode) return;
+    final toLongTerm = newMode == FsrsMode.longTermDays;
+
+    await deck.cards.load();
+    final cardsList = deck.allCards.toList();
+    for (final card in cardsList) {
+      FsrsService.transposeCardMode(
+        card: card,
+        toLongTermDays: toLongTerm,
+      );
+    }
+
+    deck.mode = newMode;
+    await _storage.updateDeck(deck);
+    if (cardsList.isNotEmpty) {
+      await _storage.saveCards(cardsList);
+    }
+    await loadDecks();
   }
 
   /// Crée un nouveau paquet
@@ -157,21 +195,25 @@ class DeckProvider with ChangeNotifier {
     return CsvService.exportCsv(items, delimiter: delimiter, lineEnding: lineEnding);
   }
 
-  /// Total de cartes tous paquets confondus
+  /// Total de cartes tous paquets ACTIFS confondus
   int get totalCardsCount {
     int total = 0;
     for (var d in _decks) {
-      total += d.cards.length;
+      if (d.isActive) {
+        total += d.allCards.length;
+      }
     }
     return total;
   }
 
-  /// Total de cartes dues tous paquets confondus
+  /// Total de cartes dues tous paquets ACTIFS confondus
   int get totalDueCardsCount {
     final now = DateTime.now();
     int due = 0;
     for (var d in _decks) {
-      due += d.cards.where((c) => c.dueDate.isBefore(now) || c.dueDate.isAtSameMomentAs(now)).length;
+      if (d.isActive) {
+        due += d.allCards.where((c) => c.dueDate.isBefore(now) || c.dueDate.isAtSameMomentAs(now)).length;
+      }
     }
     return due;
   }
@@ -182,7 +224,7 @@ class DeckProvider with ChangeNotifier {
     int due = 0;
     for (var d in _decks) {
       if (_selectedDeckIds.contains(d.id)) {
-        due += d.cards.where((c) => c.dueDate.isBefore(now) || c.dueDate.isAtSameMomentAs(now)).length;
+        due += d.allCards.where((c) => c.dueDate.isBefore(now) || c.dueDate.isAtSameMomentAs(now)).length;
       }
     }
     return due;
@@ -191,7 +233,7 @@ class DeckProvider with ChangeNotifier {
   /// Nombre de cartes dues pour un paquet spécifique
   int getDueCardsCountForDeck(Deck deck) {
     final now = DateTime.now();
-    return deck.cards.where((c) => c.dueDate.isBefore(now) || c.dueDate.isAtSameMomentAs(now)).length;
+    return deck.allCards.where((c) => c.dueDate.isBefore(now) || c.dueDate.isAtSameMomentAs(now)).length;
   }
 
   /// Récupère toutes les cartes dues des paquets actuellement sélectionnés
@@ -200,7 +242,7 @@ class DeckProvider with ChangeNotifier {
     final List<Flashcard> dueCards = [];
     for (var d in _decks) {
       if (_selectedDeckIds.contains(d.id)) {
-        dueCards.addAll(d.cards.where((c) => c.dueDate.isBefore(now) || c.dueDate.isAtSameMomentAs(now)));
+        dueCards.addAll(d.allCards.where((c) => c.dueDate.isBefore(now) || c.dueDate.isAtSameMomentAs(now)));
       }
     }
     return dueCards;
@@ -211,7 +253,7 @@ class DeckProvider with ChangeNotifier {
     final List<Flashcard> list = [];
     for (var d in _decks) {
       if (_selectedDeckIds.contains(d.id)) {
-        list.addAll(d.cards);
+        list.addAll(d.allCards);
       }
     }
     return list;
@@ -220,6 +262,17 @@ class DeckProvider with ChangeNotifier {
   /// Récupère toutes les cartes de la base pour le fallback des distracteurs QCM
   Future<List<Flashcard>> getAllCardsPool() async {
     return await _storage.getAllCards();
+  }
+
+  /// Récupère toutes les cartes appartenant à des paquets actifs (pour les notifications prédictives)
+  List<Flashcard> getActiveCardsPool() {
+    final List<Flashcard> cards = [];
+    for (var d in _decks) {
+      if (d.isActive) {
+        cards.addAll(d.allCards);
+      }
+    }
+    return cards;
   }
 
   /// Détermine si la sélection courante est en mode Colles (minutes)

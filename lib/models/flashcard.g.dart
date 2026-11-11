@@ -15,7 +15,7 @@ extension GetFlashcardCollection on Isar {
 
 const FlashcardSchema = CollectionSchema(
   name: r'Flashcard',
-  id: -5712857134961670327,
+  id: -41007642196151,
   properties: {
     r'back': PropertySchema(
       id: 0,
@@ -61,7 +61,7 @@ const FlashcardSchema = CollectionSchema(
   indexes: {},
   links: {
     r'deck': LinkSchema(
-      id: 1352900856688859183,
+      id: 695068570867759,
       name: r'deck',
       target: r'Deck',
       single: true,

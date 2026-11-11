@@ -165,7 +165,7 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
       orElse: () => widget.deck,
     );
 
-    final cards = currentDeck.cards.where((c) {
+    final cards = currentDeck.allCards.where((c) {
       if (_searchQuery.isEmpty) return true;
       return c.front.toLowerCase().contains(_searchQuery) ||
           c.back.toLowerCase().contains(_searchQuery);
@@ -179,12 +179,12 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.download, color: Catppuccin.sky),
+            icon: const Icon(Icons.file_upload_outlined, color: Catppuccin.sky),
             tooltip: 'Importer CSV',
             onPressed: () => CsvIoModal.showImportModal(context, currentDeck),
           ),
           IconButton(
-            icon: const Icon(Icons.upload, color: Catppuccin.blue),
+            icon: const Icon(Icons.file_download_outlined, color: Catppuccin.blue),
             tooltip: 'Exporter CSV',
             onPressed: () => CsvIoModal.showExportModal(context, currentDeck),
           ),
@@ -192,6 +192,73 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
       ),
       body: Column(
         children: [
+          // Bandeau d'information & bascule de mode
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                GestureDetector(
+                  onTap: () async {
+                    HapticFeedback.lightImpact();
+                    final newMode = currentDeck.mode == FsrsMode.intensiveMinutes
+                        ? FsrsMode.longTermDays
+                        : FsrsMode.intensiveMinutes;
+                    await deckProvider.switchDeckMode(currentDeck, newMode);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          backgroundColor: Catppuccin.mantle,
+                          content: Text(
+                            newMode == FsrsMode.intensiveMinutes
+                                ? '⚡ Paquet basculé en Mode Colles (minutes) !'
+                                : '📆 Paquet basculé en Mode Long Terme (jours) !',
+                            style: const TextStyle(color: Catppuccin.sky, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      );
+                    }
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: currentDeck.mode == FsrsMode.intensiveMinutes
+                          ? Catppuccin.peach.withValues(alpha: 0.15)
+                          : Catppuccin.blue.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: currentDeck.mode == FsrsMode.intensiveMinutes
+                            ? Catppuccin.peach
+                            : Catppuccin.blue,
+                        width: 1.5,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          currentDeck.mode == FsrsMode.intensiveMinutes ? 'Mode Colles ⚡' : 'Mode Long Terme 📆',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: currentDeck.mode == FsrsMode.intensiveMinutes
+                                ? Catppuccin.peach
+                                : Catppuccin.blue,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        const Icon(Icons.sync, size: 14, color: Catppuccin.subtext),
+                      ],
+                    ),
+                  ),
+                ),
+                Text(
+                  '${cards.length} carte${cards.length > 1 ? 's' : ''}',
+                  style: const TextStyle(color: Catppuccin.overlay, fontSize: 13, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+          ),
           // Barre de recherche
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
@@ -231,10 +298,10 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
 
                       return Dismissible(
                         key: ValueKey(card.id),
-                        direction: DismissDirection.endToStart,
+                        direction: DismissDirection.startToEnd,
                         background: Container(
-                          alignment: Alignment.centerRight,
-                          padding: const EdgeInsets.only(right: 20),
+                          alignment: Alignment.centerLeft,
+                          padding: const EdgeInsets.only(left: 20),
                           margin: const EdgeInsets.symmetric(vertical: 4),
                           decoration: BoxDecoration(
                             color: Catppuccin.red,

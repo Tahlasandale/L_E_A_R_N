@@ -18,6 +18,10 @@ class NotificationService {
   /// Initialise le plugin de notification et les fuseaux horaires
   Future<void> init() async {
     if (_isInitialized) return;
+    if (kIsWeb) {
+      _isInitialized = true;
+      return;
+    }
 
     tz.initializeTimeZones();
 
@@ -52,6 +56,7 @@ class NotificationService {
 
   /// Affiche immédiatement une notification test
   Future<void> showTestNotification() async {
+    if (kIsWeb) return;
     await init();
     const androidDetails = AndroidNotificationDetails(
       'kawaii_channel',
@@ -78,7 +83,7 @@ class NotificationService {
   Future<void> scheduleOnAppPause({
     required List<Flashcard> allCards,
   }) async {
-    if (allCards.isEmpty) return;
+    if (kIsWeb || allCards.isEmpty) return;
     await init();
 
     final dueDates = allCards.map((c) => c.dueDate).toList();

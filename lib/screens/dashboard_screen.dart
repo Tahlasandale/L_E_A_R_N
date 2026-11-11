@@ -374,7 +374,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       Wrap(
                         spacing: 8.0,
                         runSpacing: 8.0,
-                        children: decks.map((deck) {
+                        children: deckProvider.activeDecks.map((deck) {
                           final isSelected = deckProvider.selectedDeckIds.contains(deck.id);
                           final due = deckProvider.getDueCardsCountForDeck(deck);
 

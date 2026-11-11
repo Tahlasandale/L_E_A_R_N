@@ -40,6 +40,28 @@ void main() {
       expect(provider.reviewQueue[2].id, 1);
       expect(provider.currentCard?.id, 2);
     });
+
+    test('toggleRandomOrder bascule l\'ordre aléatoire en direct sans changer la carte courante', () {
+      final card1 = Flashcard()..id = 1..front = 'Q1'..back = 'A1'..dueDate = DateTime(2026, 11, 11, 8, 0);
+      final card2 = Flashcard()..id = 2..front = 'Q2'..back = 'A2'..dueDate = DateTime(2026, 11, 11, 9, 0);
+      final card3 = Flashcard()..id = 3..front = 'Q3'..back = 'A3'..dueDate = DateTime(2026, 11, 11, 10, 0);
+
+      final provider = ReviewProvider();
+      provider.initSession(cards: [card1, card2, card3], isRandomOrder: false);
+
+      expect(provider.isRandomOrder, isFalse);
+      expect(provider.currentCard?.id, 1);
+
+      provider.toggleRandomOrder();
+      expect(provider.isRandomOrder, isTrue);
+      // La carte courante reste card1
+      expect(provider.currentCard?.id, 1);
+      expect(provider.reviewQueue.length, 3);
+
+      provider.toggleRandomOrder();
+      expect(provider.isRandomOrder, isFalse);
+      expect(provider.currentCard?.id, 1);
+    });
   });
 
   group('ReviewProvider - Générateur de Distracteurs QCM', () {

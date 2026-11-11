@@ -109,6 +109,55 @@ class DeckManagerScreen extends StatelessWidget {
     );
   }
 
+  void _toggleDeckMode(BuildContext context, Deck deck) async {
+    HapticFeedback.lightImpact();
+    final provider = Provider.of<DeckProvider>(context, listen: false);
+    final newMode = deck.mode == FsrsMode.intensiveMinutes
+        ? FsrsMode.longTermDays
+        : FsrsMode.intensiveMinutes;
+
+    await provider.switchDeckMode(deck, newMode);
+
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Catppuccin.mantle,
+          duration: const Duration(seconds: 2),
+          content: Text(
+            newMode == FsrsMode.intensiveMinutes
+                ? '⚡ "${deck.name}" basculé en Mode Colles (minutes) !'
+                : '📆 "${deck.name}" basculé en Mode Long Terme (jours) !',
+            style: const TextStyle(color: Catppuccin.sky, fontWeight: FontWeight.bold),
+          ),
+        ),
+      );
+    }
+  }
+
+  void _toggleDeckActive(BuildContext context, Deck deck) async {
+    HapticFeedback.lightImpact();
+    final provider = Provider.of<DeckProvider>(context, listen: false);
+    await provider.toggleDeckActive(deck);
+
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Catppuccin.mantle,
+          duration: const Duration(seconds: 1),
+          content: Text(
+            deck.isActive
+                ? '✅ "${deck.name}" est maintenant ACTIF !'
+                : '💤 "${deck.name}" est maintenant INACTIF (exclu des rappels & de l\'accueil).',
+            style: TextStyle(
+              color: deck.isActive ? Catppuccin.green : Catppuccin.overlay,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final deckProvider = Provider.of<DeckProvider>(context);
@@ -152,87 +201,125 @@ class DeckManagerScreen extends StatelessWidget {
               itemBuilder: (context, index) {
                 final deck = decks[index];
                 final dueCount = deckProvider.getDueCardsCountForDeck(deck);
-                final totalCount = deck.cards.length;
+                final totalCount = deck.allCards.length;
                 final isMinutes = deck.mode == FsrsMode.intensiveMinutes;
 
-                return Card(
-                  color: Catppuccin.mantle,
-                  margin: const EdgeInsets.symmetric(vertical: 8),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(22),
-                    side: const BorderSide(color: Catppuccin.surface0, width: 2.5),
-                  ),
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(22),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => DeckDetailScreen(deck: deck),
-                        ),
-                      );
-                    },
-                    child: Padding(
-                      padding: const EdgeInsets.all(18.0),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Flexible(
-                                      child: Text(
-                                        deck.name,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.w900,
-                                          color: Catppuccin.text,
+                return Opacity(
+                  opacity: deck.isActive ? 1.0 : 0.65,
+                  child: Card(
+                    color: Catppuccin.mantle,
+                    margin: const EdgeInsets.symmetric(vertical: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(22),
+                      side: BorderSide(
+                        color: deck.isActive ? Catppuccin.surface0 : Catppuccin.crust,
+                        width: 2.5,
+                      ),
+                    ),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(22),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => DeckDetailScreen(deck: deck),
+                          ),
+                        );
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.all(18.0),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Flexible(
+                                        child: Text(
+                                          deck.name,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.w900,
+                                            color: deck.isActive ? Catppuccin.text : Catppuccin.subtext,
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: isMinutes ? Catppuccin.peach.withValues(alpha: 0.15) : Catppuccin.blue.withValues(alpha: 0.15),
-                                        borderRadius: BorderRadius.circular(10),
-                                        border: Border.all(
-                                          color: isMinutes ? Catppuccin.peach : Catppuccin.blue,
-                                          width: 1.5,
+                                      const SizedBox(width: 8),
+                                      // Badge mode cliquable
+                                      GestureDetector(
+                                        onTap: () => _toggleDeckMode(context, deck),
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: isMinutes ? Catppuccin.peach.withValues(alpha: 0.15) : Catppuccin.blue.withValues(alpha: 0.15),
+                                            borderRadius: BorderRadius.circular(10),
+                                            border: Border.all(
+                                              color: isMinutes ? Catppuccin.peach : Catppuccin.blue,
+                                              width: 1.5,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            isMinutes ? 'Colles ⚡' : 'Long terme 📆',
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
+                                              color: isMinutes ? Catppuccin.peach : Catppuccin.blue,
+                                            ),
+                                          ),
                                         ),
                                       ),
-                                      child: Text(
-                                        isMinutes ? 'Colles ⚡' : 'Long terme 📆',
-                                        style: TextStyle(
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.bold,
-                                          color: isMinutes ? Catppuccin.peach : Catppuccin.blue,
+                                      if (!deck.isActive) ...[
+                                        const SizedBox(width: 6),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: Catppuccin.surface0,
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                          child: const Text(
+                                            '💤 Inactif',
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
+                                              color: Catppuccin.overlay,
+                                            ),
+                                          ),
                                         ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  '$totalCount cartes • $dueCount à réviser',
-                                  style: const TextStyle(
-                                    color: Catppuccin.subtext,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
+                                      ],
+                                    ],
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    '$totalCount cartes • $dueCount à réviser',
+                                    style: const TextStyle(
+                                      color: Catppuccin.subtext,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.delete_outline, color: Catppuccin.overlay),
-                            onPressed: () => _showDeleteDeckDialog(context, deck),
-                          ),
-                          const Icon(Icons.chevron_right, color: Catppuccin.sky),
-                        ],
+                            // Bouton Actif / Inactif
+                            IconButton(
+                              icon: Icon(
+                                deck.isActive ? Icons.visibility : Icons.visibility_off,
+                                color: deck.isActive ? Catppuccin.sky : Catppuccin.overlay,
+                              ),
+                              tooltip: deck.isActive ? 'Rendre inactif' : 'Rendre actif',
+                              onPressed: () => _toggleDeckActive(context, deck),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.delete_outline, color: Catppuccin.overlay),
+                              tooltip: 'Supprimer le paquet',
+                              onPressed: () => _showDeleteDeckDialog(context, deck),
+                            ),
+                            const Icon(Icons.chevron_right, color: Catppuccin.sky),
+                          ],
+                        ),
                       ),
                     ),
                   ),

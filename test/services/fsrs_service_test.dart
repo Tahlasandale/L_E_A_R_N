@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:learn_flashcards/models/flashcard.dart';
 import 'package:learn_flashcards/services/fsrs_service.dart';
 
 void main() {
@@ -139,6 +140,65 @@ void main() {
 
       // La 3ème carte due est t2 (14:00)
       expect(targetDate, t2);
+    });
+  });
+
+  group('FsrsService - Transposition Intelligente de Mode', () {
+    test('Bascule Minutes -> Jours réinitialise une carte neuve ou peu révisée', () {
+      final now = DateTime(2026, 11, 11, 10, 0);
+      final card = Flashcard()
+        ..reps = 0
+        ..interval = 1.0
+        ..ease = 2.5
+        ..dueDate = now;
+
+      FsrsService.transposeCardMode(
+        card: card,
+        toLongTermDays: true,
+        referenceTime: now,
+      );
+
+      expect(card.interval, 0.0);
+      expect(card.dueDate, now);
+      expect(card.ease, 2.5);
+    });
+
+    test('Bascule Minutes -> Jours convertit une carte maîtrisée en jours selon ses répétitions', () {
+      final now = DateTime(2026, 11, 11, 10, 0);
+      final card = Flashcard()
+        ..reps = 4
+        ..interval = 25.0
+        ..ease = 2.65
+        ..dueDate = now;
+
+      FsrsService.transposeCardMode(
+        card: card,
+        toLongTermDays: true,
+        referenceTime: now,
+      );
+
+      expect(card.interval, 2.0); // min(3.0, (4/2)) = 2.0 jours
+      expect(card.dueDate, now.add(const Duration(days: 2)));
+      expect(card.ease, 2.65); // facilité préservée
+    });
+
+    test('Bascule Jours -> Minutes rend les cartes immédiatement révisables pour bachoter', () {
+      final now = DateTime(2026, 11, 11, 10, 0);
+      final card = Flashcard()
+        ..reps = 5
+        ..interval = 14.0 // 14 jours
+        ..ease = 2.8
+        ..dueDate = now.add(const Duration(days: 7));
+
+      FsrsService.transposeCardMode(
+        card: card,
+        toLongTermDays: false,
+        referenceTime: now,
+      );
+
+      expect(card.interval, 0.0); // prête à réviser tout de suite
+      expect(card.dueDate, now);
+      expect(card.ease, 2.8); // facilité préservée
     });
   });
 }

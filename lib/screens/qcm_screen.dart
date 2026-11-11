@@ -29,6 +29,11 @@ class _QcmScreenState extends State<QcmScreen> {
   String? _selectedAnswer;
   String? _correctAnswer;
   bool _isAnswered = false;
+  String? _zoomedChoice;
+
+  // Suivi du score pour l'écran de fin
+  int _correctCount = 0;
+  int _totalAnswered = 0;
 
   @override
   void initState() {
@@ -52,6 +57,7 @@ class _QcmScreenState extends State<QcmScreen> {
         _correctAnswer = card.back.trim();
         _selectedAnswer = null;
         _isAnswered = false;
+        _zoomedChoice = null;
       });
     }
   }
@@ -65,68 +71,41 @@ class _QcmScreenState extends State<QcmScreen> {
     final card = reviewProvider.currentCard;
     if (card == null) return;
 
+    final isCorrect = answer.trim() == _correctAnswer;
     setState(() {
       _selectedAnswer = answer;
       _isAnswered = true;
+      _totalAnswered++;
+      if (isCorrect) _correctCount++;
     });
 
-    final isCorrect = answer.trim() == _correctAnswer;
     reviewProvider.rateCurrentCard(
       rating: isCorrect ? 4 : 1,
       isIntensiveMinutes: widget.isIntensiveMinutes,
       storage: storage,
     );
 
-    Timer(const Duration(milliseconds: 1200), () {
+    Timer(const Duration(milliseconds: 1100), () {
       if (!mounted) return;
-      if (reviewProvider.isSessionFinished) {
-        _showCompletionDialog();
-      } else {
+      if (!reviewProvider.isSessionFinished) {
         _loadChoicesForCurrentCard();
+      } else {
+        setState(() {}); // Transition directe vers l'écran de fin intégré
       }
     });
   }
 
-  void _showCompletionDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: Catppuccin.mantle,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-        title: const Center(
-          child: Text(
-            r'🎉 (*^‿^*) 🎉',
-            style: TextStyle(fontSize: 28, color: Catppuccin.green, fontWeight: FontWeight.bold),
-          ),
-        ),
-        content: const Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Colle terminée !',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Catppuccin.text),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'Excellente session de colles QCM !',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Catppuccin.subtext, fontSize: 14),
-            ),
-          ],
-        ),
-        actions: [
-          KawaiiButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              Navigator.pop(context);
-              Provider.of<DeckProvider>(context, listen: false).loadDecks();
-            },
-            child: const Text('Retour à l\'accueil 🚀'),
-          ),
-        ],
-      ),
-    );
+  void _restartColle() {
+    final reviewProvider = Provider.of<ReviewProvider>(context, listen: false);
+    setState(() {
+      _correctCount = 0;
+      _totalAnswered = 0;
+      _isAnswered = false;
+      _selectedAnswer = null;
+      _zoomedChoice = null;
+    });
+    reviewProvider.initSession(cards: widget.poolCards);
+    _loadChoicesForCurrentCard();
   }
 
   @override
@@ -134,16 +113,9 @@ class _QcmScreenState extends State<QcmScreen> {
     final reviewProvider = Provider.of<ReviewProvider>(context);
     final card = reviewProvider.currentCard;
 
+    // --- ÉCRAN DE FIN INTÉGRÉ ---
     if (card == null || reviewProvider.isSessionFinished) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Mode Colles (QCM)')),
-        body: Center(
-          child: KawaiiButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Retour à l\'accueil'),
-          ),
-        ),
-      );
+      return _buildCompletionScreen(context, reviewProvider);
     }
 
     return Scaffold(
@@ -156,9 +128,35 @@ class _QcmScreenState extends State<QcmScreen> {
             fontSize: 18,
           ),
         ),
-        actions: const [
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16.0),
+        actions: [
+          IconButton(
+            icon: Icon(
+              Icons.shuffle_rounded,
+              color: reviewProvider.isRandomOrder ? Catppuccin.mauve : Catppuccin.overlay,
+            ),
+            tooltip: reviewProvider.isRandomOrder ? 'Ordre aléatoire actif' : 'Activer l\'ordre aléatoire',
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              reviewProvider.toggleRandomOrder();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  backgroundColor: Catppuccin.mantle,
+                  duration: const Duration(milliseconds: 900),
+                  content: Text(
+                    reviewProvider.isRandomOrder
+                        ? '🔀 Mode Aléatoire ACTIVÉ !'
+                        : '⏱️ Tri FSRS rétabli !',
+                    style: TextStyle(
+                      color: reviewProvider.isRandomOrder ? Catppuccin.mauve : Catppuccin.sky,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 14.0),
             child: Center(
               child: Text(
                 "(ง'̀-'́)ง",
@@ -178,52 +176,145 @@ class _QcmScreenState extends State<QcmScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // --- QUESTION BOX ---
+              // --- QUESTION BOX AVEC ANIMATION DE TRANSITION ---
               Expanded(
                 flex: 4,
-                child: Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Catppuccin.mantle,
-                    borderRadius: BorderRadius.circular(28),
-                    border: Border.all(color: Catppuccin.blue, width: 4),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Color(0x33000000),
-                        offset: Offset(0, 8),
-                        blurRadius: 15,
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 320),
+                  transitionBuilder: (child, animation) {
+                    return SlideTransition(
+                      position: Tween<Offset>(
+                        begin: const Offset(0.08, 0.0),
+                        end: Offset.zero,
+                      ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic)),
+                      child: FadeTransition(opacity: animation, child: child),
+                    );
+                  },
+                  child: Container(
+                    key: ValueKey('question_${card.id}'),
+                    padding: const EdgeInsets.all(22),
+                    decoration: BoxDecoration(
+                      color: Catppuccin.mantle,
+                      borderRadius: BorderRadius.circular(28),
+                      border: Border.all(color: Catppuccin.blue, width: 4),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0x33000000),
+                          offset: Offset(0, 8),
+                          blurRadius: 15,
+                        ),
+                      ],
+                    ),
+                    child: Center(
+                      child: AdaptiveText(
+                        card.front,
+                        maxFontSize: 26,
+                        minFontSize: 14,
+                        maxLines: 4, // Permet les retours à la ligne pour questions longues
+                        fontWeight: FontWeight.w900,
+                        color: Catppuccin.text,
                       ),
-                    ],
-                  ),
-                  child: Center(
-                    child: AdaptiveText(
-                      card.front,
-                      maxFontSize: 26,
-                      minFontSize: 15,
-                      fontWeight: FontWeight.w900,
-                      color: Catppuccin.text,
                     ),
                   ),
                 ),
               ),
               const SizedBox(height: 20),
 
-              // --- 2x2 GRID OF CHOICES ---
+              // --- ZONE DES RÉPONSES AVEC GESTION DU ZOOM LONG-PRESS ---
               Expanded(
                 flex: 5,
-                child: GridView.builder(
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                    childAspectRatio: 1.4,
-                  ),
-                  itemCount: _currentChoices.length,
-                  itemBuilder: (context, index) {
-                    final choice = _currentChoices[index];
-                    return _buildQcmChoiceButton(choice);
-                  },
+                child: Stack(
+                  children: [
+                    // Grille 2x2 avec animation d'apparition
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 280),
+                      transitionBuilder: (child, animation) {
+                        return FadeTransition(
+                          opacity: animation,
+                          child: ScaleTransition(
+                            scale: Tween<double>(begin: 0.95, end: 1.0).animate(
+                              CurvedAnimation(parent: animation, curve: Curves.easeOutBack),
+                            ),
+                            child: child,
+                          ),
+                        );
+                      },
+                      child: GridView.builder(
+                        key: ValueKey('grid_${card.id}'),
+                        physics: const NeverScrollableScrollPhysics(),
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                          childAspectRatio: 1.4,
+                        ),
+                        itemCount: _currentChoices.length,
+                        itemBuilder: (context, index) {
+                          final choice = _currentChoices[index];
+                          return _buildQcmChoiceButton(choice);
+                        },
+                      ),
+                    ),
+
+                    // Overlay de Zoom au maintien long
+                    if (_zoomedChoice != null)
+                      Positioned.fill(
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 150),
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: Catppuccin.mantle,
+                            borderRadius: BorderRadius.circular(24),
+                            border: Border.all(color: Catppuccin.mauve, width: 4.5),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Color(0x66000000),
+                                offset: Offset(0, 8),
+                                blurRadius: 20,
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.zoom_in, color: Catppuccin.mauve, size: 20),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    'Aperçu agrandi',
+                                    style: TextStyle(
+                                      color: Catppuccin.mauve,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              Expanded(
+                                child: Center(
+                                  child: AdaptiveText(
+                                    _zoomedChoice!,
+                                    maxFontSize: 28,
+                                    minFontSize: 16,
+                                    maxLines: 5,
+                                    fontWeight: FontWeight.w900,
+                                    color: Catppuccin.text,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              const Text(
+                                'Relâche pour revenir à la grille 👆',
+                                style: TextStyle(color: Catppuccin.overlay, fontSize: 11),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ),
             ],
@@ -252,6 +343,16 @@ class _QcmScreenState extends State<QcmScreen> {
 
     return GestureDetector(
       onTap: _isAnswered ? null : () => _handleAnswer(choice),
+      onLongPressStart: (_) {
+        HapticFeedback.mediumImpact();
+        setState(() => _zoomedChoice = choice);
+      },
+      onLongPressEnd: (_) {
+        setState(() => _zoomedChoice = null);
+      },
+      onLongPressCancel: () {
+        setState(() => _zoomedChoice = null);
+      },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -278,6 +379,130 @@ class _QcmScreenState extends State<QcmScreen> {
               fontWeight: FontWeight.w900,
               fontSize: 14,
             ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Écran de fin de session Colles intégré (sans AlertDialog)
+  Widget _buildCompletionScreen(BuildContext context, ReviewProvider reviewProvider) {
+    final int scorePercent = _totalAnswered > 0
+        ? ((_correctCount / _totalAnswered) * 100).round()
+        : 100;
+
+    String encouragement;
+    Color scoreColor;
+
+    if (scorePercent >= 90) {
+      encouragement = '🤩 Parfait ! Tu maîtrises tes colles comme un chef !';
+      scoreColor = Catppuccin.green;
+    } else if (scorePercent >= 70) {
+      encouragement = '👏 Très bon travail ! Tu es bien affûté !';
+      scoreColor = Catppuccin.sky;
+    } else if (scorePercent >= 50) {
+      encouragement = '😊 Pas mal du tout ! Encore un petit effort.';
+      scoreColor = Catppuccin.yellow;
+    } else {
+      encouragement = '💪 Ne baisse pas les bras, refais un tour de colle !';
+      scoreColor = Catppuccin.peach;
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          'Colle Terminée ! 🎯',
+          style: TextStyle(fontWeight: FontWeight.w900, color: Catppuccin.sky),
+        ),
+      ),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text(
+                '🎉 (*^‿^*) 🎉',
+                style: TextStyle(fontSize: 48, color: Catppuccin.green, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 24),
+
+              // Carte de récapitulation du score
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Catppuccin.mantle,
+                  borderRadius: BorderRadius.circular(28),
+                  border: Border.all(color: Catppuccin.blue, width: 3.5),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x33000000),
+                      offset: Offset(0, 8),
+                      blurRadius: 16,
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    const Text(
+                      'Score de la Session',
+                      style: TextStyle(
+                        color: Catppuccin.subtext,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      '$_correctCount / $_totalAnswered',
+                      style: TextStyle(
+                        fontSize: 48,
+                        fontWeight: FontWeight.w900,
+                        color: scoreColor,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '$scorePercent% de réussite',
+                      style: const TextStyle(
+                        color: Catppuccin.text,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      encouragement,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Catppuccin.lavender,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 36),
+
+              // Boutons d'action
+              KawaiiButton.secondary(
+                height: 52,
+                onPressed: _restartColle,
+                child: const Text('Recommencer la colle 🔄'),
+              ),
+              const SizedBox(height: 14),
+              KawaiiButton(
+                height: 52,
+                onPressed: () {
+                  Navigator.pop(context);
+                  Provider.of<DeckProvider>(context, listen: false).loadDecks();
+                },
+                child: const Text('Retour à l\'accueil 🏠'),
+              ),
+            ],
           ),
         ),
       ),

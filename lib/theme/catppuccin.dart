@@ -18,6 +18,10 @@ class Catppuccin {
   static const Color green = Color(0xFFA6E3A1); // Succès / Facile
   static const Color peach = Color(0xFFFAB387); // Moyen / Difficile
   static const Color red = Color(0xFFF38BA8);   // Erreur / À revoir
+  static const Color mauve = Color(0xFFCBA6F7); // Accent violet
+  static const Color lavender = Color(0xFFB4BEFE);
+  static const Color yellow = Color(0xFFF9E2AF);
+  static const Color pink = Color(0xFFF5C2E7);
 
   static ThemeData get themeData {
     final nunitoFamily = GoogleFonts.nunito().fontFamily;

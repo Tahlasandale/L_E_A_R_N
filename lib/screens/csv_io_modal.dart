@@ -4,6 +4,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:provider/provider.dart';
 import '../models/deck.dart';
 import '../providers/deck_provider.dart';
+import '../services/file_saver/file_saver.dart';
 import '../theme/catppuccin.dart';
 import '../widgets/kawaii_button.dart';
 
@@ -399,28 +400,74 @@ class CsvIoModal {
                     ),
                     const SizedBox(height: 24),
 
-                    KawaiiButton(
-                      onPressed: () async {
-                        final provider = Provider.of<DeckProvider>(context, listen: false);
-                        final csvContent = await provider.exportDeckCsv(
-                          deck,
-                          delimiter: effectiveField,
-                          lineEnding: effectiveCard,
-                        );
+                    // Deux options d'export : Partager ou Téléchargements
+                    Row(
+                      children: [
+                        Expanded(
+                          child: KawaiiButton.secondary(
+                            height: 48,
+                            onPressed: () async {
+                              final provider = Provider.of<DeckProvider>(context, listen: false);
+                              final csvContent = await provider.exportDeckCsv(
+                                deck,
+                                delimiter: effectiveField,
+                                lineEnding: effectiveCard,
+                              );
 
-                        await SharePlus.instance.share(
-                          ShareParams(
-                            text: csvContent,
-                            subject: 'Export ${deck.name}.csv',
-                            title: 'Export ${deck.name}',
+                              final cleanName = deck.name.replaceAll(RegExp(r'[^\w\s\-]'), '').trim().replaceAll(' ', '_');
+                              final fileName = '${cleanName.isEmpty ? 'deck' : cleanName}_export.csv';
+                              final savedPath = await FileSaverService.saveCsv(fileName, csvContent);
+
+                              if (context.mounted) {
+                                Navigator.pop(context);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    backgroundColor: Catppuccin.mantle,
+                                    duration: const Duration(seconds: 3),
+                                    content: Text(
+                                      savedPath != null
+                                          ? '💾 Enregistré : $savedPath'
+                                          : '⚠️ Impossible d\'enregistrer le fichier.',
+                                      style: TextStyle(
+                                        color: savedPath != null ? Catppuccin.green : Catppuccin.red,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }
+                            },
+                            child: const Text('Enregistrer 💾', style: TextStyle(fontSize: 13)),
                           ),
-                        );
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: KawaiiButton(
+                            height: 48,
+                            onPressed: () async {
+                              final provider = Provider.of<DeckProvider>(context, listen: false);
+                              final csvContent = await provider.exportDeckCsv(
+                                deck,
+                                delimiter: effectiveField,
+                                lineEnding: effectiveCard,
+                              );
 
-                        if (context.mounted) {
-                          Navigator.pop(context);
-                        }
-                      },
-                      child: const Text('Partager / Enregistrer le fichier 🚀'),
+                              await SharePlus.instance.share(
+                                ShareParams(
+                                  text: csvContent,
+                                  subject: 'Export ${deck.name}.csv',
+                                  title: 'Export ${deck.name}',
+                                ),
+                              );
+
+                              if (context.mounted) {
+                                Navigator.pop(context);
+                              }
+                            },
+                            child: const Text('Partager 🚀', style: TextStyle(fontSize: 13)),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),

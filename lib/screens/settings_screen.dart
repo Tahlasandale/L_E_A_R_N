@@ -240,7 +240,7 @@ class SettingsScreen extends StatelessWidget {
                 ),
                 SizedBox(height: 12),
                 Text(
-                  'Kawaii Flashcards v1.1.0\n'
+                  'Kawaii Flashcards v1.1.1\n'
                   '• Moteur de répétition espacée FSRS / SM-2 avec rétention paramétrable (70%-98%)\n'
                   '• Base de données Isar NoSQL ultra-rapide\n'
                   '• Thème Catppuccin Macchiato Sombre\n'

@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart';
@@ -5,11 +6,12 @@ import '../models/deck.dart';
 import '../models/flashcard.dart';
 
 class StorageService {
-  late Isar _isar;
+  Isar? _isar;
   final List<Deck> _webDecks = [];
   int _webIdCounter = 1;
 
-  Isar get isar => _isar;
+  Isar? get isar => _isar;
+  bool get hasIsar => _isar != null && !kIsWeb;
 
   StorageService([Isar? isarInstance]) {
     if (isarInstance != null) {
@@ -17,14 +19,14 @@ class StorageService {
     }
   }
 
-  /// Initialise l'instance Isar avec les schémas
+  /// Initialise l'instance Isar avec les schémas et récupération automatique en cas d'erreur
   Future<void> init({String? customPath}) async {
     if (kIsWeb) {
       return;
     }
 
     if (Isar.instanceNames.contains('default')) {
-      _isar = Isar.getInstance('default')!;
+      _isar = Isar.getInstance('default');
       return;
     }
 
@@ -32,32 +34,64 @@ class StorageService {
     if (customPath != null) {
       path = customPath;
     } else {
-      final dir = await getApplicationDocumentsDirectory();
-      path = dir.path;
+      try {
+        final dir = await getApplicationDocumentsDirectory();
+        path = dir.path;
+      } catch (e) {
+        debugPrint('getApplicationDocumentsDirectory error: $e');
+        return;
+      }
     }
 
-    _isar = await Isar.open(
-      [DeckSchema, FlashcardSchema],
-      directory: path,
-      name: 'default',
-    );
+    try {
+      _isar = await Isar.open(
+        [DeckSchema, FlashcardSchema],
+        directory: path,
+        name: 'default',
+      );
+    } catch (e) {
+      debugPrint('Isar.open primary error: $e. Tentative de réinitialisation propre...');
+      try {
+        // En cas d'incompatibilité de schéma lors d'une mise à jour (v1.0 -> v1.1)
+        final dbFile = File('$path/default.isar');
+        if (await dbFile.exists()) {
+          await dbFile.delete();
+        }
+        final lockFile = File('$path/default.isar.lock');
+        if (await lockFile.exists()) {
+          await lockFile.delete();
+        }
+        _isar = await Isar.open(
+          [DeckSchema, FlashcardSchema],
+          directory: path,
+          name: 'default',
+        );
+      } catch (e2) {
+        debugPrint('Isar recovery error: $e2. Bascule en mode mémoire de secours.');
+      }
+    }
   }
 
   /// Récupère tous les paquets
   Future<List<Deck>> getAllDecks() async {
-    if (kIsWeb) {
+    if (!hasIsar) {
       return List.unmodifiable(_webDecks);
     }
-    final decks = await _isar.decks.where().findAll();
-    for (var deck in decks) {
-      await deck.cards.load();
+    try {
+      final decks = await _isar!.decks.where().findAll();
+      for (var deck in decks) {
+        await deck.cards.load();
+      }
+      return decks;
+    } catch (e) {
+      debugPrint('getAllDecks error: $e');
+      return List.unmodifiable(_webDecks);
     }
-    return decks;
   }
 
   /// Crée un nouveau paquet
   Future<Deck> createDeck(String name, {FsrsMode mode = FsrsMode.intensiveMinutes}) async {
-    if (kIsWeb) {
+    if (!hasIsar) {
       final existing = _webDecks.where((d) => d.name == name.trim()).firstOrNull;
       if (existing != null) {
         return existing;
@@ -71,7 +105,7 @@ class StorageService {
       return newDeck;
     }
 
-    final existing = await _isar.decks.filter().nameEqualTo(name.trim()).findFirst();
+    final existing = await _isar!.decks.filter().nameEqualTo(name.trim()).findFirst();
     if (existing != null) {
       return existing;
     }
@@ -81,8 +115,8 @@ class StorageService {
       ..mode = mode
       ..createdAt = DateTime.now();
 
-    await _isar.writeTxn(() async {
-      await _isar.decks.put(newDeck);
+    await _isar!.writeTxn(() async {
+      await _isar!.decks.put(newDeck);
     });
 
     return newDeck;
@@ -90,7 +124,7 @@ class StorageService {
 
   /// Met à jour un paquet
   Future<void> updateDeck(Deck deck) async {
-    if (kIsWeb) {
+    if (!hasIsar) {
       final idx = _webDecks.indexWhere((d) => d.id == deck.id);
       if (idx != -1) {
         _webDecks[idx] = deck;
@@ -98,38 +132,38 @@ class StorageService {
       return;
     }
 
-    await _isar.writeTxn(() async {
-      await _isar.decks.put(deck);
+    await _isar!.writeTxn(() async {
+      await _isar!.decks.put(deck);
     });
   }
 
   /// Supprime un paquet et toutes ses cartes associées
   Future<void> deleteDeck(Id deckId) async {
-    if (kIsWeb) {
+    if (!hasIsar) {
       _webDecks.removeWhere((d) => d.id == deckId);
       return;
     }
 
-    final deck = await _isar.decks.get(deckId);
+    final deck = await _isar!.decks.get(deckId);
     if (deck == null) return;
 
     await deck.cards.load();
     final cardIds = deck.cards.map((c) => c.id).toList();
 
-    await _isar.writeTxn(() async {
-      await _isar.flashcards.deleteAll(cardIds);
-      await _isar.decks.delete(deckId);
+    await _isar!.writeTxn(() async {
+      await _isar!.flashcards.deleteAll(cardIds);
+      await _isar!.decks.delete(deckId);
     });
   }
 
   /// Récupère toutes les cartes d'un paquet
   Future<List<Flashcard>> getCardsForDeck(Id deckId) async {
-    if (kIsWeb) {
+    if (!hasIsar) {
       final deck = _webDecks.where((d) => d.id == deckId).firstOrNull;
       return deck?.webCards.toList() ?? [];
     }
 
-    final deck = await _isar.decks.get(deckId);
+    final deck = await _isar!.decks.get(deckId);
     if (deck == null) return [];
     await deck.cards.load();
     return deck.cards.toList();
@@ -137,7 +171,7 @@ class StorageService {
 
   /// Ajoute une liste de cartes dans un paquet
   Future<void> addCardsToDeck(List<Flashcard> cards, Deck deck) async {
-    if (kIsWeb) {
+    if (!hasIsar) {
       for (var card in cards) {
         if (card.id == Isar.autoIncrement || card.id == 0) {
           card.id = _webIdCounter++;
@@ -148,10 +182,10 @@ class StorageService {
       return;
     }
 
-    await _isar.writeTxn(() async {
+    await _isar!.writeTxn(() async {
       for (var card in cards) {
         card.deck.value = deck;
-        await _isar.flashcards.put(card);
+        await _isar!.flashcards.put(card);
         await card.deck.save();
       }
       await deck.cards.save();
@@ -160,7 +194,7 @@ class StorageService {
 
   /// Sauvegarde ou met à jour une seule carte
   Future<void> saveCard(Flashcard card) async {
-    if (kIsWeb) {
+    if (!hasIsar) {
       if (card.deck.value != null) {
         card.deck.value!.webCards.removeWhere((c) => c.id == card.id);
         card.deck.value!.webCards.add(card);
@@ -168,15 +202,15 @@ class StorageService {
       return;
     }
 
-    await _isar.writeTxn(() async {
-      await _isar.flashcards.put(card);
+    await _isar!.writeTxn(() async {
+      await _isar!.flashcards.put(card);
       await card.deck.save();
     });
   }
 
   /// Sauvegarde ou met à jour plusieurs cartes
   Future<void> saveCards(List<Flashcard> cards) async {
-    if (kIsWeb) {
+    if (!hasIsar) {
       for (final card in cards) {
         if (card.deck.value != null) {
           card.deck.value!.webCards.removeWhere((c) => c.id == card.id);
@@ -186,8 +220,8 @@ class StorageService {
       return;
     }
 
-    await _isar.writeTxn(() async {
-      await _isar.flashcards.putAll(cards);
+    await _isar!.writeTxn(() async {
+      await _isar!.flashcards.putAll(cards);
       for (var card in cards) {
         await card.deck.save();
       }
@@ -196,32 +230,32 @@ class StorageService {
 
   /// Supprime une carte
   Future<void> deleteCard(Id cardId) async {
-    if (kIsWeb) {
+    if (!hasIsar) {
       for (var d in _webDecks) {
         d.webCards.removeWhere((c) => c.id == cardId);
       }
       return;
     }
 
-    await _isar.writeTxn(() async {
-      await _isar.flashcards.delete(cardId);
+    await _isar!.writeTxn(() async {
+      await _isar!.flashcards.delete(cardId);
     });
   }
 
   /// Récupère toutes les cartes de la base (pour distracteurs QCM fallback)
   Future<List<Flashcard>> getAllCards() async {
-    if (kIsWeb) {
+    if (!hasIsar) {
       return _webDecks.expand((d) => d.webCards).toList();
     }
 
-    return await _isar.flashcards.where().findAll();
+    return await _isar!.flashcards.where().findAll();
   }
 
   /// Récupère toutes les cartes dues pour une liste d'identifiants de paquets
   Future<List<Flashcard>> getDueCardsForDecks(List<Id> deckIds, {DateTime? now}) async {
     final reference = now ?? DateTime.now();
 
-    if (kIsWeb) {
+    if (!hasIsar) {
       final allDue = <Flashcard>[];
       for (var deckId in deckIds) {
         final deck = _webDecks.where((d) => d.id == deckId).firstOrNull;
@@ -234,7 +268,7 @@ class StorageService {
     final allDue = <Flashcard>[];
 
     for (var deckId in deckIds) {
-      final deck = await _isar.decks.get(deckId);
+      final deck = await _isar!.decks.get(deckId);
       if (deck == null) continue;
       await deck.cards.load();
 

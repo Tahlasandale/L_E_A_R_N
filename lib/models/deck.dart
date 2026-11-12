@@ -30,5 +30,5 @@ class Deck {
   final List<Flashcard> webCards = [];
 
   @ignore
-  Iterable<Flashcard> get allCards => kIsWeb ? webCards : cards;
+  Iterable<Flashcard> get allCards => cards.isNotEmpty ? cards : webCards;
 }

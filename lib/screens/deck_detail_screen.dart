@@ -179,13 +179,13 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.file_upload_outlined, color: Catppuccin.sky),
-            tooltip: 'Importer CSV',
+            icon: const Icon(Icons.file_download_outlined, color: Catppuccin.sky),
+            tooltip: 'Importer CSV (📥)',
             onPressed: () => CsvIoModal.showImportModal(context, currentDeck),
           ),
           IconButton(
-            icon: const Icon(Icons.file_download_outlined, color: Catppuccin.blue),
-            tooltip: 'Exporter CSV',
+            icon: const Icon(Icons.file_upload_outlined, color: Catppuccin.blue),
+            tooltip: 'Exporter CSV (📤)',
             onPressed: () => CsvIoModal.showExportModal(context, currentDeck),
           ),
         ],

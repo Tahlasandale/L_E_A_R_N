@@ -172,24 +172,35 @@ class StorageService {
   /// Ajoute une liste de cartes dans un paquet
   Future<void> addCardsToDeck(List<Flashcard> cards, Deck deck) async {
     if (!hasIsar) {
+      final targetDeck = _webDecks.where((d) => d.id == deck.id).firstOrNull ?? deck;
       for (var card in cards) {
         if (card.id == Isar.autoIncrement || card.id == 0) {
           card.id = _webIdCounter++;
         }
-        card.deck.value = deck;
-        deck.webCards.add(card);
+        card.deck.value = targetDeck;
+        if (!targetDeck.webCards.contains(card)) {
+          targetDeck.webCards.add(card);
+        }
+        if (deck != targetDeck && !deck.webCards.contains(card)) {
+          deck.webCards.add(card);
+        }
       }
       return;
     }
 
+    final targetDeck = await _isar!.decks.get(deck.id) ?? deck;
     await _isar!.writeTxn(() async {
+      await _isar!.flashcards.putAll(cards);
       for (var card in cards) {
-        card.deck.value = deck;
-        await _isar!.flashcards.put(card);
+        card.deck.value = targetDeck;
         await card.deck.save();
       }
-      await deck.cards.save();
     });
+
+    await targetDeck.cards.load();
+    if (deck != targetDeck) {
+      await deck.cards.load();
+    }
   }
 
   /// Sauvegarde ou met à jour une seule carte

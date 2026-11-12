@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:share_plus/share_plus.dart';
@@ -169,13 +170,29 @@ class CsvIoModal {
                     KawaiiButton.secondary(
                       height: 40,
                       onPressed: () async {
-                        final files = await FilePicker.pickFiles(
-                          type: FileType.custom,
-                          allowedExtensions: ['csv', 'txt'],
-                        );
-                        if (files.isNotEmpty) {
-                          final content = await files.first.xFile.readAsString();
-                          textController.text = content;
+                        try {
+                          List<PlatformFile> files = [];
+                          try {
+                            files = await FilePicker.pickFiles(
+                              type: FileType.custom,
+                              allowedExtensions: ['csv', 'txt', 'tsv'],
+                            );
+                          } catch (_) {
+                            files = await FilePicker.pickFiles(type: FileType.any);
+                          }
+                          if (files.isNotEmpty) {
+                            final bytes = await files.first.xFile.readAsBytes();
+                            String content;
+                            try {
+                              content = utf8.decode(bytes);
+                            } catch (_) {
+                              content = latin1.decode(bytes);
+                            }
+                            textController.text = content;
+                            setState(() {});
+                          }
+                        } catch (e) {
+                          debugPrint('FilePicker error: $e');
                         }
                       },
                       child: const Text('📂 Choisir un fichier .csv / .txt'),

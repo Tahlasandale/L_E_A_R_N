@@ -109,6 +109,115 @@ class DeckManagerScreen extends StatelessWidget {
     );
   }
 
+  void _showEditDeckDialog(BuildContext context, Deck deck) {
+    final controller = TextEditingController(text: deck.name);
+    FsrsMode selectedMode = deck.mode;
+    bool isActive = deck.isActive;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            backgroundColor: Catppuccin.mantle,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+            title: const Text('Modifier le Paquet ✏️', style: TextStyle(color: Catppuccin.sky, fontWeight: FontWeight.bold)),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextField(
+                    controller: controller,
+                    style: const TextStyle(color: Catppuccin.text),
+                    decoration: const InputDecoration(
+                      labelText: 'Nom du paquet',
+                      labelStyle: TextStyle(color: Catppuccin.overlay),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  const Text('Mode FSRS :', style: TextStyle(color: Catppuccin.subtext, fontSize: 13, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 6),
+                  DropdownButton<FsrsMode>(
+                    value: selectedMode,
+                    dropdownColor: Catppuccin.crust,
+                    isExpanded: true,
+                    style: const TextStyle(color: Catppuccin.text, fontWeight: FontWeight.bold),
+                    items: const [
+                      DropdownMenuItem(
+                        value: FsrsMode.intensiveMinutes,
+                        child: Text('⚡ Mode Colles (intervalles en minutes)'),
+                      ),
+                      DropdownMenuItem(
+                        value: FsrsMode.longTermDays,
+                        child: Text('📆 Mode Long terme (intervalles en jours)'),
+                      ),
+                    ],
+                    onChanged: (val) {
+                      if (val != null) setState(() => selectedMode = val);
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Paquet Actif', style: TextStyle(color: Catppuccin.text, fontWeight: FontWeight.bold, fontSize: 14)),
+                    subtitle: const Text('Inclus dans les révisions du tableau de bord', style: TextStyle(color: Catppuccin.overlay, fontSize: 12)),
+                    value: isActive,
+                    activeColor: Catppuccin.green,
+                    onChanged: (val) => setState(() => isActive = val),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Annuler', style: TextStyle(color: Catppuccin.overlay)),
+              ),
+              KawaiiButton(
+                height: 42,
+                width: 130,
+                onPressed: () async {
+                  final newName = controller.text.trim();
+                  if (newName.isEmpty) return;
+
+                  final provider = Provider.of<DeckProvider>(context, listen: false);
+
+                  // Renommer si changé
+                  if (newName != deck.name) {
+                    final success = await provider.renameDeck(deck, newName);
+                    if (!success && context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          backgroundColor: Catppuccin.red,
+                          content: Text('Un paquet avec ce nom existe déjà !', style: TextStyle(color: Catppuccin.crust, fontWeight: FontWeight.bold)),
+                        ),
+                      );
+                      return;
+                    }
+                  }
+
+                  // Basculer le mode si changé
+                  if (selectedMode != deck.mode) {
+                    await provider.switchDeckMode(deck, selectedMode);
+                  }
+
+                  // Basculer statut actif si changé
+                  if (isActive != deck.isActive) {
+                    await provider.toggleDeckActive(deck);
+                  }
+
+                  if (context.mounted) Navigator.pop(ctx);
+                },
+                child: const Text('Enregistrer 💾'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
   void _toggleDeckMode(BuildContext context, Deck deck) async {
     HapticFeedback.lightImpact();
     final provider = Provider.of<DeckProvider>(context, listen: false);
@@ -302,6 +411,12 @@ class DeckManagerScreen extends StatelessWidget {
                                   ),
                                 ],
                               ),
+                            ),
+                            // Bouton Modifier
+                            IconButton(
+                              icon: const Icon(Icons.edit_outlined, color: Catppuccin.sky),
+                              tooltip: 'Modifier / Renommer le paquet',
+                              onPressed: () => _showEditDeckDialog(context, deck),
                             ),
                             // Bouton Actif / Inactif
                             IconButton(

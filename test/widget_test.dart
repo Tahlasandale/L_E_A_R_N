@@ -118,6 +118,7 @@ void main() {
     await tester.pumpWidget(
       MultiProvider(
         providers: [
+          Provider<StorageService>.value(value: fakeStorage),
           ChangeNotifierProvider(create: (_) => SettingsProvider()),
           ChangeNotifierProvider(create: (_) => DeckProvider(fakeStorage)),
           ChangeNotifierProvider(create: (_) => ReviewProvider()),
@@ -133,7 +134,7 @@ void main() {
     // Au départ, sur l'accueil
     expect(find.text('Flashcards ⚡'), findsOneWidget);
     expect(find.text('Nouveau Paquet 📚'), findsNothing);
-    expect(find.text('Rappels Prédictifs FSRS'), findsNothing);
+    expect(find.text('Taux de Rétention FSRS'), findsNothing);
 
     // Swipe vers la gauche (doigt va de droite à gauche -> affiche Mes Paquets)
     await tester.drag(find.byType(PageView), const Offset(-450, 0));
@@ -145,7 +146,7 @@ void main() {
     await tester.drag(find.byType(PageView), const Offset(-450, 0));
     await tester.pumpAndSettle();
 
-    expect(find.text('Rappels Prédictifs FSRS'), findsOneWidget);
+    expect(find.text('Taux de Rétention FSRS'), findsOneWidget);
 
     // Swipe vers la droite -> revient à Mes Paquets
     await tester.drag(find.byType(PageView), const Offset(450, 0));
@@ -162,10 +163,13 @@ void main() {
 
   testWidgets('SettingsScreen affiche le taux de rétention et réagit aux préréglages', (WidgetTester tester) async {
     final settingsProvider = SettingsProvider();
+    final fakeStorage = _FakeStorageService();
 
     await tester.pumpWidget(
       MultiProvider(
         providers: [
+          Provider<StorageService>.value(value: fakeStorage),
+          ChangeNotifierProvider(create: (_) => DeckProvider(fakeStorage)),
           ChangeNotifierProvider.value(value: settingsProvider),
         ],
         child: const MaterialApp(

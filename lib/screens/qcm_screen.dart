@@ -30,7 +30,11 @@ class _QcmScreenState extends State<QcmScreen> {
   String? _selectedAnswer;
   String? _correctAnswer;
   bool _isAnswered = false;
+  bool _showBigCorrectAnswer = false;
   String? _zoomedChoice;
+
+  Timer? _phase1Timer;
+  Timer? _phase2Timer;
 
   // Suivi du score pour l'écran de fin
   int _correctCount = 0;
@@ -44,7 +48,16 @@ class _QcmScreenState extends State<QcmScreen> {
     });
   }
 
+  @override
+  void dispose() {
+    _phase1Timer?.cancel();
+    _phase2Timer?.cancel();
+    super.dispose();
+  }
+
   void _loadChoicesForCurrentCard() {
+    _phase1Timer?.cancel();
+    _phase2Timer?.cancel();
     final reviewProvider = Provider.of<ReviewProvider>(context, listen: false);
     final card = reviewProvider.currentCard;
 
@@ -58,6 +71,7 @@ class _QcmScreenState extends State<QcmScreen> {
         _correctAnswer = card.back.trim();
         _selectedAnswer = null;
         _isAnswered = false;
+        _showBigCorrectAnswer = false;
         _zoomedChoice = null;
       });
     }
@@ -69,6 +83,7 @@ class _QcmScreenState extends State<QcmScreen> {
 
     final reviewProvider = Provider.of<ReviewProvider>(context, listen: false);
     final storage = Provider.of<StorageService>(context, listen: false);
+    final settingsProvider = Provider.of<SettingsProvider>(context, listen: false);
     final card = reviewProvider.currentCard;
     if (card == null) return;
 
@@ -80,7 +95,6 @@ class _QcmScreenState extends State<QcmScreen> {
       if (isCorrect) _correctCount++;
     });
 
-    final settingsProvider = Provider.of<SettingsProvider>(context, listen: false);
     reviewProvider.rateCurrentCard(
       rating: isCorrect ? 4 : 1,
       isIntensiveMinutes: widget.isIntensiveMinutes,
@@ -88,23 +102,40 @@ class _QcmScreenState extends State<QcmScreen> {
       storage: storage,
     );
 
-    Timer(const Duration(milliseconds: 1100), () {
+    // Phase 1 : Affichage immédiat du feedback vert/rouge sur les boutons (450ms)
+    _phase1Timer?.cancel();
+    _phase1Timer = Timer(const Duration(milliseconds: 450), () {
       if (!mounted) return;
-      if (!reviewProvider.isSessionFinished) {
-        _loadChoicesForCurrentCard();
-      } else {
-        setState(() {}); // Transition directe vers l'écran de fin intégré
-      }
+      setState(() {
+        _showBigCorrectAnswer = true;
+      });
+
+      // Phase 2 : Affichage de la bonne réponse en grand pour la durée configurée
+      final durationMs = (settingsProvider.qcmGoodAnswerDuration * 1000).round();
+      _phase2Timer?.cancel();
+      _phase2Timer = Timer(Duration(milliseconds: durationMs), () {
+        if (!mounted) return;
+        if (!reviewProvider.isSessionFinished) {
+          _loadChoicesForCurrentCard();
+        } else {
+          setState(() {
+            _showBigCorrectAnswer = false;
+          });
+        }
+      });
     });
   }
 
   void _restartColle() {
+    _phase1Timer?.cancel();
+    _phase2Timer?.cancel();
     final reviewProvider = Provider.of<ReviewProvider>(context, listen: false);
     setState(() {
       _correctCount = 0;
       _totalAnswered = 0;
       _isAnswered = false;
       _selectedAnswer = null;
+      _showBigCorrectAnswer = false;
       _zoomedChoice = null;
     });
     reviewProvider.initSession(cards: widget.poolCards);
@@ -228,35 +259,23 @@ class _QcmScreenState extends State<QcmScreen> {
                 flex: 5,
                 child: Stack(
                   children: [
-                    // Grille 2x2 avec animation d'apparition
+                    // Bascule fluide entre les 4 lignes de choix et la grande bonne réponse
                     AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 280),
+                      duration: const Duration(milliseconds: 260),
                       transitionBuilder: (child, animation) {
                         return FadeTransition(
                           opacity: animation,
                           child: ScaleTransition(
-                            scale: Tween<double>(begin: 0.95, end: 1.0).animate(
-                              CurvedAnimation(parent: animation, curve: Curves.easeOutBack),
+                            scale: Tween<double>(begin: 0.96, end: 1.0).animate(
+                              CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
                             ),
                             child: child,
                           ),
                         );
                       },
-                      child: GridView.builder(
-                        key: ValueKey('grid_${card.id}'),
-                        physics: const NeverScrollableScrollPhysics(),
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 12,
-                          childAspectRatio: 1.4,
-                        ),
-                        itemCount: _currentChoices.length,
-                        itemBuilder: (context, index) {
-                          final choice = _currentChoices[index];
-                          return _buildQcmChoiceButton(choice);
-                        },
-                      ),
+                      child: _showBigCorrectAnswer
+                          ? _buildBigCorrectAnswerBox()
+                          : _buildChoicesColumn(card.id),
                     ),
 
                     // Overlay de Zoom au maintien long
@@ -310,7 +329,7 @@ class _QcmScreenState extends State<QcmScreen> {
                               ),
                               const SizedBox(height: 6),
                               const Text(
-                                'Relâche pour revenir à la grille 👆',
+                                'Relâche pour revenir à la liste 👆',
                                 style: TextStyle(color: Catppuccin.overlay, fontSize: 11),
                               ),
                             ],
@@ -327,13 +346,88 @@ class _QcmScreenState extends State<QcmScreen> {
     );
   }
 
+  Widget _buildChoicesColumn(int cardId) {
+    return Column(
+      key: ValueKey('choices_$cardId'),
+      children: [
+        for (int i = 0; i < _currentChoices.length; i++) ...[
+          if (i > 0) const SizedBox(height: 10),
+          Expanded(
+            child: _buildQcmChoiceButton(_currentChoices[i]),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildBigCorrectAnswerBox() {
+    final isCorrect = _selectedAnswer?.trim() == _correctAnswer;
+    final accentColor = isCorrect ? Catppuccin.green : Catppuccin.peach;
+
+    return Container(
+      key: const ValueKey('big_correct_answer'),
+      width: double.infinity,
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: Catppuccin.mantle,
+        borderRadius: BorderRadius.circular(26),
+        border: Border.all(color: accentColor, width: 4),
+        boxShadow: [
+          BoxShadow(
+            color: accentColor.withValues(alpha: 0.25),
+            offset: const Offset(0, 6),
+            blurRadius: 16,
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                isCorrect ? Icons.check_circle_rounded : Icons.lightbulb_outline_rounded,
+                color: accentColor,
+                size: 24,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                isCorrect ? 'EXCELLENT ! 🎉' : 'BONNE RÉPONSE : 💡',
+                style: TextStyle(
+                  color: accentColor,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 15,
+                  letterSpacing: 1.1,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Expanded(
+            child: Center(
+              child: AdaptiveText(
+                _correctAnswer ?? '',
+                maxFontSize: 28,
+                minFontSize: 15,
+                maxLines: 5,
+                fontWeight: FontWeight.w900,
+                color: Catppuccin.text,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildQcmChoiceButton(String choice) {
     Color bg = Catppuccin.mantle;
     Color border = Catppuccin.surface0;
     Color textCol = Catppuccin.text;
 
     if (_isAnswered) {
-      if (choice == _correctAnswer) {
+      if (choice.trim() == _correctAnswer) {
         bg = Catppuccin.green;
         border = const Color(0xFF40A02B);
         textCol = Catppuccin.crust;
@@ -358,30 +452,28 @@ class _QcmScreenState extends State<QcmScreen> {
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         decoration: BoxDecoration(
           color: bg,
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: border, width: 3.5),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: border, width: 3),
           boxShadow: [
             BoxShadow(
-              color: border.withValues(alpha: 0.5),
-              offset: const Offset(0, 4),
+              color: border.withValues(alpha: 0.35),
+              offset: const Offset(0, 3),
               blurRadius: 0,
             ),
           ],
         ),
         child: Center(
-          child: Text(
+          child: AdaptiveText(
             choice,
+            maxFontSize: 18,
+            minFontSize: 12,
             maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: textCol,
-              fontWeight: FontWeight.w900,
-              fontSize: 14,
-            ),
+            fontWeight: FontWeight.w800,
+            color: textCol,
           ),
         ),
       ),

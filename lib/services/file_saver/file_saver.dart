@@ -5,4 +5,7 @@ import 'file_saver_stub.dart'
 class FileSaverService {
   static Future<String?> saveCsv(String fileName, String content) =>
       saveCsvToDownloads(fileName, content);
+
+  static Future<String?> saveFile(String fileName, String content) =>
+      saveCsvToDownloads(fileName, content);
 }

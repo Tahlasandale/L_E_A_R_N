@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:isar/isar.dart';
@@ -9,6 +10,8 @@ class StorageService {
   Isar? _isar;
   final List<Deck> _webDecks = [];
   int _webIdCounter = 1;
+  String? _storageDirectoryPath;
+  bool didAutoRestoreFromMirror = false;
 
   Isar? get isar => _isar;
   bool get hasIsar => _isar != null && !kIsWeb;
@@ -19,7 +22,7 @@ class StorageService {
     }
   }
 
-  /// Initialise l'instance Isar avec les schémas et récupération automatique en cas d'erreur
+  /// Initialise l'instance Isar avec les schémas, sécurité de verrou et miroir JSON
   Future<void> init({String? customPath}) async {
     if (kIsWeb) {
       return;
@@ -42,6 +45,7 @@ class StorageService {
         return;
       }
     }
+    _storageDirectoryPath = path;
 
     try {
       _isar = await Isar.open(
@@ -50,13 +54,9 @@ class StorageService {
         name: 'default',
       );
     } catch (e) {
-      debugPrint('Isar.open primary error: $e. Tentative de réinitialisation propre...');
+      debugPrint('Isar.open primary error: $e. Tentative de réouverture propre sans suppression de base...');
       try {
-        // En cas d'incompatibilité de schéma lors d'une mise à jour (v1.0 -> v1.1)
-        final dbFile = File('$path/default.isar');
-        if (await dbFile.exists()) {
-          await dbFile.delete();
-        }
+        // Nettoyage UNIQUEMENT du fichier de lock si un arrêt brusque a eu lieu, JAMAIS du fichier de données .isar
         final lockFile = File('$path/default.isar.lock');
         if (await lockFile.exists()) {
           await lockFile.delete();
@@ -69,6 +69,48 @@ class StorageService {
       } catch (e2) {
         debugPrint('Isar recovery error: $e2. Bascule en mode mémoire de secours.');
       }
+    }
+
+    // Auto-restauration depuis le miroir JSON si la base est vide
+    await _checkAndAutoRestoreMirror(path);
+  }
+
+  /// Vérifie si la base est vide et auto-restaure depuis le miroir JSON permanent
+  Future<void> _checkAndAutoRestoreMirror(String path) async {
+    try {
+      final mirrorFile = File('$path/vault_backup.json');
+      if (await mirrorFile.exists()) {
+        final jsonStr = await mirrorFile.readAsString();
+        if (jsonStr.trim().isNotEmpty) {
+          final existing = await getAllDecks();
+          if (existing.isEmpty) {
+            final stats = await importFullBackupJson(jsonStr);
+            if ((stats['decksAdded'] ?? 0) > 0 || (stats['cardsAdded'] ?? 0) > 0) {
+              didAutoRestoreFromMirror = true;
+              debugPrint('Auto-restauration réussie depuis le miroir JSON: $stats');
+            }
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Erreur lors de la vérification du miroir JSON: $e');
+    }
+  }
+
+  /// Écrit une sauvegarde miroir atomique sur le disque local
+  Future<void> _writeMirrorBackup() async {
+    if (kIsWeb) return;
+    try {
+      final path = _storageDirectoryPath;
+      if (path == null) return;
+
+      final jsonStr = await exportFullBackupJson();
+      final tmpFile = File('$path/vault_backup.json.tmp');
+      await tmpFile.writeAsString(jsonStr, flush: true);
+      final targetFile = File('$path/vault_backup.json');
+      await tmpFile.rename(targetFile.path);
+    } catch (e) {
+      debugPrint('Erreur écriture miroir JSON: $e');
     }
   }
 
@@ -102,6 +144,7 @@ class StorageService {
         ..mode = mode
         ..createdAt = DateTime.now();
       _webDecks.add(newDeck);
+      _writeMirrorBackup();
       return newDeck;
     }
 
@@ -119,7 +162,37 @@ class StorageService {
       await _isar!.decks.put(newDeck);
     });
 
+    _writeMirrorBackup();
     return newDeck;
+  }
+
+  /// Renomme un paquet avec contrôle d'unicité
+  Future<bool> renameDeck(Deck deck, String newName) async {
+    final clean = newName.trim();
+    if (clean.isEmpty) return false;
+    if (clean == deck.name) return true;
+
+    if (!hasIsar) {
+      final conflict = _webDecks.any((d) => d.id != deck.id && d.name.toLowerCase() == clean.toLowerCase());
+      if (conflict) return false;
+      final target = _webDecks.where((d) => d.id == deck.id).firstOrNull ?? deck;
+      target.name = clean;
+      deck.name = clean;
+      _writeMirrorBackup();
+      return true;
+    }
+
+    final conflict = await _isar!.decks.filter().nameEqualTo(clean, caseSensitive: false).findFirst();
+    if (conflict != null && conflict.id != deck.id) return false;
+
+    await _isar!.writeTxn(() async {
+      final actual = await _isar!.decks.get(deck.id) ?? deck;
+      actual.name = clean;
+      deck.name = clean;
+      await _isar!.decks.put(actual);
+    });
+    _writeMirrorBackup();
+    return true;
   }
 
   /// Met à jour un paquet
@@ -129,18 +202,25 @@ class StorageService {
       if (idx != -1) {
         _webDecks[idx] = deck;
       }
+      _writeMirrorBackup();
       return;
     }
 
     await _isar!.writeTxn(() async {
-      await _isar!.decks.put(deck);
+      final actual = await _isar!.decks.get(deck.id) ?? deck;
+      actual.name = deck.name;
+      actual.mode = deck.mode;
+      actual.isActive = deck.isActive;
+      await _isar!.decks.put(actual);
     });
+    _writeMirrorBackup();
   }
 
   /// Supprime un paquet et toutes ses cartes associées
   Future<void> deleteDeck(Id deckId) async {
     if (!hasIsar) {
       _webDecks.removeWhere((d) => d.id == deckId);
+      _writeMirrorBackup();
       return;
     }
 
@@ -154,6 +234,7 @@ class StorageService {
       await _isar!.flashcards.deleteAll(cardIds);
       await _isar!.decks.delete(deckId);
     });
+    _writeMirrorBackup();
   }
 
   /// Récupère toutes les cartes d'un paquet
@@ -201,6 +282,7 @@ class StorageService {
     if (deck != targetDeck) {
       await deck.cards.load();
     }
+    _writeMirrorBackup();
   }
 
   /// Sauvegarde ou met à jour une seule carte
@@ -210,6 +292,7 @@ class StorageService {
         card.deck.value!.webCards.removeWhere((c) => c.id == card.id);
         card.deck.value!.webCards.add(card);
       }
+      _writeMirrorBackup();
       return;
     }
 
@@ -217,6 +300,7 @@ class StorageService {
       await _isar!.flashcards.put(card);
       await card.deck.save();
     });
+    _writeMirrorBackup();
   }
 
   /// Sauvegarde ou met à jour plusieurs cartes
@@ -228,6 +312,7 @@ class StorageService {
           card.deck.value!.webCards.add(card);
         }
       }
+      _writeMirrorBackup();
       return;
     }
 
@@ -237,6 +322,7 @@ class StorageService {
         await card.deck.save();
       }
     });
+    _writeMirrorBackup();
   }
 
   /// Supprime une carte
@@ -245,12 +331,14 @@ class StorageService {
       for (var d in _webDecks) {
         d.webCards.removeWhere((c) => c.id == cardId);
       }
+      _writeMirrorBackup();
       return;
     }
 
     await _isar!.writeTxn(() async {
       await _isar!.flashcards.delete(cardId);
     });
+    _writeMirrorBackup();
   }
 
   /// Récupère toutes les cartes de la base (pour distracteurs QCM fallback)
@@ -288,5 +376,154 @@ class StorageService {
     }
 
     return allDue;
+  }
+
+  /// Exporte l'intégralité de la base de données (paquets, cartes avec toutes les métriques FSRS et réglages)
+  Future<String> exportFullBackupJson({Map<String, dynamic>? extraSettings}) async {
+    final allDecks = await getAllDecks();
+    final List<Map<String, dynamic>> decksData = [];
+
+    for (final deck in allDecks) {
+      final cards = await getCardsForDeck(deck.id);
+      decksData.add({
+        'name': deck.name,
+        'mode': deck.mode == FsrsMode.intensiveMinutes ? 'intensiveMinutes' : 'longTermDays',
+        'isActive': deck.isActive,
+        'createdAt': deck.createdAt.toIso8601String(),
+        'cards': cards.map((c) => {
+          'front': c.front,
+          'back': c.back,
+          'reps': c.reps,
+          'interval': c.interval,
+          'ease': c.ease,
+          'dueDate': c.dueDate.toIso8601String(),
+          'lastReviewed': c.lastReviewed?.toIso8601String(),
+        }).toList(),
+      });
+    }
+
+    final Map<String, dynamic> root = {
+      'app': 'Kawaii Flashcards',
+      'version': 1,
+      'exportedAt': DateTime.now().toIso8601String(),
+      if (extraSettings != null) 'settings': extraSettings,
+      'decks': decksData,
+    };
+
+    return const JsonEncoder.withIndent('  ').convert(root);
+  }
+
+  /// Importe une sauvegarde JSON avec Fusion Intelligente Systématique
+  /// Retourne un résumé : {'decksAdded': count, 'cardsAdded': count, 'cardsUpdated': count}
+  Future<Map<String, int>> importFullBackupJson(String jsonStr) async {
+    int decksAdded = 0;
+    int cardsAdded = 0;
+    int cardsUpdated = 0;
+
+    final dynamic parsed = jsonDecode(jsonStr);
+    if (parsed is! Map<String, dynamic>) {
+      throw const FormatException('Le fichier de sauvegarde n\'est pas un objet JSON valide.');
+    }
+
+    final rawDecks = parsed['decks'];
+    if (rawDecks is! List) {
+      return {'decksAdded': 0, 'cardsAdded': 0, 'cardsUpdated': 0};
+    }
+
+    for (final rawDeck in rawDecks) {
+      if (rawDeck is! Map) continue;
+      final deckMap = Map<String, dynamic>.from(rawDeck);
+      final deckName = (deckMap['name'] as String?)?.trim();
+      if (deckName == null || deckName.isEmpty) continue;
+
+      final modeStr = deckMap['mode'] as String?;
+      final mode = modeStr == 'longTermDays' ? FsrsMode.longTermDays : FsrsMode.intensiveMinutes;
+      final isActive = deckMap['isActive'] as bool? ?? true;
+      final createdAtStr = deckMap['createdAt'] as String?;
+      final createdAt = createdAtStr != null ? DateTime.tryParse(createdAtStr) : null;
+
+      // Chercher ou créer le paquet
+      final existingDecks = await getAllDecks();
+      Deck? targetDeck = existingDecks.where((d) => d.name.toLowerCase() == deckName.toLowerCase()).firstOrNull;
+
+      if (targetDeck == null) {
+        targetDeck = await createDeck(deckName, mode: mode);
+        targetDeck.isActive = isActive;
+        if (createdAt != null) targetDeck.createdAt = createdAt;
+        await updateDeck(targetDeck);
+        decksAdded++;
+      }
+
+      // Parcourir les cartes du paquet
+      final rawCards = deckMap['cards'];
+      if (rawCards is List && rawCards.isNotEmpty) {
+        final existingCards = await getCardsForDeck(targetDeck.id);
+        final List<Flashcard> cardsToAdd = [];
+        final List<Flashcard> cardsToSave = [];
+
+        for (final rawCard in rawCards) {
+          if (rawCard is! Map) continue;
+          final cardMap = Map<String, dynamic>.from(rawCard);
+          final front = (cardMap['front'] as String?)?.trim();
+          final back = (cardMap['back'] as String?)?.trim();
+          if (front == null || front.isEmpty || back == null || back.isEmpty) continue;
+
+          final reps = cardMap['reps'] as int? ?? 0;
+          final interval = (cardMap['interval'] as num?)?.toDouble() ?? 0.0;
+          final ease = (cardMap['ease'] as num?)?.toDouble() ?? 2.5;
+          final dueDateStr = cardMap['dueDate'] as String?;
+          final dueDate = dueDateStr != null ? (DateTime.tryParse(dueDateStr) ?? DateTime.now()) : DateTime.now();
+          final lastReviewedStr = cardMap['lastReviewed'] as String?;
+          final lastReviewed = lastReviewedStr != null ? DateTime.tryParse(lastReviewedStr) : null;
+
+          final existingCard = existingCards.where((c) => c.front.trim() == front).firstOrNull;
+          if (existingCard == null) {
+            final newCard = Flashcard()
+              ..front = front
+              ..back = back
+              ..reps = reps
+              ..interval = interval
+              ..ease = ease
+              ..dueDate = dueDate
+              ..lastReviewed = lastReviewed;
+            cardsToAdd.add(newCard);
+            cardsAdded++;
+          } else {
+            // Mise à jour si la carte importée a plus de révisions ou une date de révision plus récente
+            bool shouldUpdate = false;
+            if (reps > existingCard.reps) {
+              shouldUpdate = true;
+            } else if (lastReviewed != null && (existingCard.lastReviewed == null || lastReviewed.isAfter(existingCard.lastReviewed!))) {
+              shouldUpdate = true;
+            }
+
+            if (shouldUpdate) {
+              existingCard.back = back;
+              existingCard.reps = reps;
+              existingCard.interval = interval;
+              existingCard.ease = ease;
+              existingCard.dueDate = dueDate;
+              existingCard.lastReviewed = lastReviewed;
+              cardsToSave.add(existingCard);
+              cardsUpdated++;
+            }
+          }
+        }
+
+        if (cardsToAdd.isNotEmpty) {
+          await addCardsToDeck(cardsToAdd, targetDeck);
+        }
+        if (cardsToSave.isNotEmpty) {
+          await saveCards(cardsToSave);
+        }
+      }
+    }
+
+    _writeMirrorBackup();
+    return {
+      'decksAdded': decksAdded,
+      'cardsAdded': cardsAdded,
+      'cardsUpdated': cardsUpdated,
+    };
   }
 }

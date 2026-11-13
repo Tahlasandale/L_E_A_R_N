@@ -5,9 +5,11 @@ import 'package:path_provider/path_provider.dart';
 
 class SettingsProvider with ChangeNotifier {
   double _desiredRetention = 0.90; // Valeur par défaut standard FSRS (90%)
+  double _qcmGoodAnswerDuration = 1.0; // Durée d'affichage de la bonne réponse en secondes
 
   double get desiredRetention => _desiredRetention;
   int get desiredRetentionPercent => (_desiredRetention * 100).round();
+  double get qcmGoodAnswerDuration => _qcmGoodAnswerDuration;
 
   /// Charge les réglages sauvegardés
   Future<void> init() async {
@@ -22,9 +24,15 @@ class SettingsProvider with ChangeNotifier {
           final val = (data['desiredRetention'] as num).toDouble();
           if (val >= 0.70 && val <= 0.98) {
             _desiredRetention = val;
-            notifyListeners();
           }
         }
+        if (data.containsKey('qcmGoodAnswerDuration')) {
+          final val = (data['qcmGoodAnswerDuration'] as num).toDouble();
+          if (val >= 0.5 && val <= 5.0) {
+            _qcmGoodAnswerDuration = val;
+          }
+        }
+        notifyListeners();
       }
     } catch (_) {}
   }
@@ -34,13 +42,25 @@ class SettingsProvider with ChangeNotifier {
     final clamped = value.clamp(0.70, 0.98);
     _desiredRetention = double.parse(clamped.toStringAsFixed(2));
     notifyListeners();
+    await _saveSettings();
+  }
 
+  /// Met à jour la durée d'affichage de la bonne réponse en QCM (entre 0.5s et 5.0s)
+  Future<void> setQcmGoodAnswerDuration(double duration) async {
+    final clamped = duration.clamp(0.5, 5.0);
+    _qcmGoodAnswerDuration = double.parse(clamped.toStringAsFixed(1));
+    notifyListeners();
+    await _saveSettings();
+  }
+
+  Future<void> _saveSettings() async {
     if (kIsWeb) return;
     try {
       final dir = await getApplicationDocumentsDirectory();
       final file = File('${dir.path}/app_settings.json');
       final data = {
         'desiredRetention': _desiredRetention,
+        'qcmGoodAnswerDuration': _qcmGoodAnswerDuration,
         'updatedAt': DateTime.now().toIso8601String(),
       };
       await file.writeAsString(jsonEncode(data));

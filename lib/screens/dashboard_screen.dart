@@ -410,7 +410,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       KawaiiButton.secondary(
                         height: 58,
                         onPressed: _startQcm,
-                        child: const Text('Mode Colles (QCM) 📝', style: TextStyle(fontSize: 18)),
+                        child: const Text('Entraînement QCM 📝', style: TextStyle(fontSize: 18)),
                       ),
                     ],
                   ),

@@ -78,8 +78,7 @@ class DeckProvider with ChangeNotifier {
     if (deck.mode == newMode) return;
     final toLongTerm = newMode == FsrsMode.longTermDays;
 
-    await deck.cards.load();
-    final cardsList = deck.allCards.toList();
+    final cardsList = await _storage.getCardsForDeck(deck.id);
     for (final card in cardsList) {
       FsrsService.transposeCardMode(
         card: card,
@@ -108,6 +107,22 @@ class DeckProvider with ChangeNotifier {
   Future<void> updateDeck(Deck deck) async {
     await _storage.updateDeck(deck);
     await loadDecks();
+  }
+
+  /// Renomme un paquet avec contrôle d'unicité
+  Future<bool> renameDeck(Deck deck, String newName) async {
+    final success = await _storage.renameDeck(deck, newName);
+    if (success) {
+      await loadDecks();
+    }
+    return success;
+  }
+
+  /// Importe un backup global JSON avec fusion intelligente et recharge les paquets
+  Future<Map<String, int>> importFullBackup(String jsonStr) async {
+    final stats = await _storage.importFullBackupJson(jsonStr);
+    await loadDecks();
+    return stats;
   }
 
   /// Supprime un paquet

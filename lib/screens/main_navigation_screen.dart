@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/deck_provider.dart';
 import '../providers/settings_provider.dart';
 import '../services/notification_service.dart';
+import '../services/storage_service.dart';
 import '../theme/catppuccin.dart';
 import 'dashboard_screen.dart';
 import 'deck_manager_screen.dart';
@@ -33,9 +34,33 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
     _currentIndex = widget.initialIndex;
     _pageController = PageController(initialPage: _currentIndex);
     WidgetsBinding.instance.addObserver(this);
-    // Charger les paquets au démarrage
+    // Charger les paquets au démarrage et notifier si auto-restauration
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<DeckProvider>(context, listen: false).loadDecks();
+      final deckProvider = Provider.of<DeckProvider>(context, listen: false);
+      final storage = Provider.of<StorageService>(context, listen: false);
+      deckProvider.loadDecks();
+
+      if (storage.didAutoRestoreFromMirror && mounted) {
+        storage.didAutoRestoreFromMirror = false;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            backgroundColor: Catppuccin.mantle,
+            duration: Duration(seconds: 4),
+            content: Row(
+              children: [
+                Icon(Icons.cloud_done_rounded, color: Catppuccin.green),
+                SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    '✨ Données et progression restaurées automatiquement depuis le miroir JSON !',
+                    style: TextStyle(color: Catppuccin.green, fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
     });
   }
 

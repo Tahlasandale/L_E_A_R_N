@@ -157,6 +157,59 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
     );
   }
 
+  void _showRenameDeckDialog(Deck deck) {
+    final controller = TextEditingController(text: deck.name);
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Catppuccin.mantle,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+        title: const Text('Renommer le paquet ✏️', style: TextStyle(color: Catppuccin.sky, fontWeight: FontWeight.bold)),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          style: const TextStyle(color: Catppuccin.text),
+          decoration: const InputDecoration(
+            labelText: 'Nouveau nom du paquet',
+            labelStyle: TextStyle(color: Catppuccin.overlay),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Annuler', style: TextStyle(color: Catppuccin.overlay)),
+          ),
+          KawaiiButton(
+            height: 42,
+            width: 120,
+            onPressed: () async {
+              final newName = controller.text.trim();
+              if (newName.isNotEmpty && newName != deck.name) {
+                final provider = Provider.of<DeckProvider>(context, listen: false);
+                final success = await provider.renameDeck(deck, newName);
+                if (ctx.mounted) {
+                  Navigator.pop(ctx);
+                  if (!success) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        backgroundColor: Catppuccin.red,
+                        content: Text('Un paquet avec ce nom existe déjà !', style: TextStyle(color: Catppuccin.crust, fontWeight: FontWeight.bold)),
+                      ),
+                    );
+                  }
+                }
+              } else {
+                Navigator.pop(ctx);
+              }
+            },
+            child: const Text('Enregistrer 💾'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final deckProvider = Provider.of<DeckProvider>(context);
@@ -173,11 +226,33 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          currentDeck.name,
-          style: const TextStyle(fontWeight: FontWeight.w900, color: Catppuccin.sky),
+        title: InkWell(
+          borderRadius: BorderRadius.circular(10),
+          onTap: () => _showRenameDeckDialog(currentDeck),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 2.0),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Flexible(
+                  child: Text(
+                    currentDeck.name,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontWeight: FontWeight.w900, color: Catppuccin.sky),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                const Icon(Icons.edit_outlined, size: 18, color: Catppuccin.overlay),
+              ],
+            ),
+          ),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.edit_outlined, color: Catppuccin.sky),
+            tooltip: 'Renommer le paquet (✏️)',
+            onPressed: () => _showRenameDeckDialog(currentDeck),
+          ),
           IconButton(
             icon: const Icon(Icons.file_download_outlined, color: Catppuccin.sky),
             tooltip: 'Importer CSV (📥)',

@@ -36,5 +36,20 @@ void main() {
       expect(updatedDeck.allCards.length, 3);
       expect(updatedDeck.allCards.map((c) => c.front), containsAll(['perro', 'gato', 'casa']));
     });
+
+    test('DeckProvider.switchDeckMode bascule bien le mode du paquet de Colles vers Long Terme', () async {
+      final storage = StorageService();
+      final provider = DeckProvider(storage);
+      await provider.loadDecks();
+
+      final deck = await provider.createDeck('Test Mode', mode: FsrsMode.intensiveMinutes);
+      expect(deck.mode, FsrsMode.intensiveMinutes);
+
+      await provider.switchDeckMode(deck, FsrsMode.longTermDays);
+
+      final updated = provider.decks.firstWhere((d) => d.id == deck.id);
+      expect(updated.mode, FsrsMode.longTermDays);
+      expect(deck.mode, FsrsMode.longTermDays);
+    });
   });
 }

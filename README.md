@@ -21,7 +21,7 @@
   <img src="https://img.shields.io/badge/Database-Isar%20NoSQL-4A154B" alt="Isar" />
   <img src="https://img.shields.io/badge/Algorithm-FSRS%20%2F%20SM--2-89B4FA" alt="FSRS" />
   <img src="https://img.shields.io/badge/Theme-Catppuccin%20Macchiato-1E1E2E?logoColor=CDD6F4" alt="Catppuccin Macchiato" />
-  <img src="https://img.shields.io/badge/Tests-34%2F34%20Passing-A6E3A1" alt="Tests" />
+  <img src="https://img.shields.io/badge/Tests-47%2F47%20Passing-A6E3A1" alt="Tests" />
   <img src="https://img.shields.io/badge/License-MIT-fab387" alt="License" />
 </p>
 
@@ -39,12 +39,20 @@
     <td><img src="docs/screenshots/review.png" width="300" alt="Review Screen 3D Flip" /></td>
   </tr>
   <tr>
-    <td align="center"><strong>Mode Colles (QCM 2x2)</strong></td>
+    <td align="center"><strong>Mode Colles (QCM 4 Lignes)</strong></td>
     <td align="center"><strong>Gestionnaire de Paquets</strong></td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/qcm.png" width="300" alt="QCM Screen 2x2" /></td>
+    <td><img src="docs/screenshots/qcm.png" width="300" alt="QCM Screen 4 Lignes" /></td>
     <td><img src="docs/screenshots/decks.png" width="300" alt="Decks Screen" /></td>
+  </tr>
+  <tr>
+    <td align="center"><strong>Explorateur de Cartes & Recherche</strong></td>
+    <td align="center"><strong>Paramètres, FSRS & Sauvegarde JSON</strong></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/deck_detail.png" width="300" alt="Deck Detail Screen" /></td>
+    <td><img src="docs/screenshots/settings.png" width="300" alt="Settings Screen" /></td>
   </tr>
 </table>
 
@@ -83,10 +91,11 @@ Sélectionnez en un instant un ou plusieurs paquets directement depuis l'écran 
 - Requalification instantanée : une carte échouée est automatiquement replacée en fin de file pour la session en cours.
 - Bouton de mélange aléatoire 🔀 directement accessible dans la barre d'en-tête.
 
-### 📝 Mode Colles (QCM Arcade 2x2)
+### 📝 Mode Colles (QCM Arcade 4 Lignes)
+- **Disposition optimisée sur 4 lignes** : chaque choix dispose de sa propre ligne pour un confort de lecture maximal, évitant tout chevauchement ou texte tronqué.
+- **Feedback visuel & Affichage en grand format de la bonne réponse** : dès la sélection d'une option, un retour vert/rouge immédiat s'affiche, suivi de la mise en valeur en grand format de la bonne réponse sur la partie basse de l'écran pendant une durée personnalisable (1 à 3 secondes) dans les Paramètres.
 - **Animations fluides** : transitions de glissement et fondu lors du passage à la question suivante, et pop kawaii sur les réponses.
-- **Multi-lignes adaptatif** : prise en charge automatique des questions longues sur plusieurs lignes sans texte tronqué.
-- **Zoom au maintien long (Long-Press)** : maintenez appuyé sur n'importe quel choix pour l'afficher en grand format sur la partie basse de l'écran. Relâchez pour revenir instantanément à la grille 2x2 !
+- **Zoom au maintien long (Long-Press)** : maintenez appuyé sur n'importe quel choix pour l'afficher en grand format sur la partie basse de l'écran.
 - **Écran de fin de session intégré** : résultat affiché directement dans l'écran avec score, pourcentage de réussite, mascotte festive et bouton de rejouabilité immédiate.
 
 ### 🔋 Notifications Prédictives Zéro-Polling
@@ -166,7 +175,7 @@ flutter pub get
 ```bash
 flutter test
 ```
-*Résultat : 34/34 tests réussis.*
+*Résultat : 47/47 tests réussis (dont 6 tests de captures d'écran Golden automatisés).*
 
 ### Lancer l'analyse statique
 ```bash

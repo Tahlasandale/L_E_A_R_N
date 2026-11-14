@@ -1,9 +1,13 @@
+import 'dart:math';
 import 'package:flutter/foundation.dart';
 import '../models/flashcard.dart';
 import '../services/fsrs_service.dart';
 import '../services/storage_service.dart';
 
 class ReviewProvider with ChangeNotifier {
+  final Random? random;
+  ReviewProvider({this.random});
+
   List<Flashcard> _reviewQueue = [];
   int _currentIndex = 0;
   bool _isFlipped = false;
@@ -119,7 +123,9 @@ class ReviewProvider with ChangeNotifier {
   List<String> generateQcmChoices({
     required Flashcard currentCard,
     List<Flashcard>? allPoolCards,
+    Random? random,
   }) {
+    final rng = random ?? this.random;
     final correctAnswer = currentCard.back.trim();
     final Set<String> distractors = {};
 
@@ -134,7 +140,12 @@ class ReviewProvider with ChangeNotifier {
 
     // 2. Si moins de 3 distracteurs, piocher dans le pool global fourni (autres paquets)
     if (distractors.length < 3 && allPoolCards != null) {
-      final shuffledPool = List<Flashcard>.from(allPoolCards)..shuffle();
+      final shuffledPool = List<Flashcard>.from(allPoolCards);
+      if (rng != null) {
+        shuffledPool.shuffle(rng);
+      } else {
+        shuffledPool.shuffle();
+      }
       for (var card in shuffledPool) {
         final answer = card.back.trim();
         if (answer != correctAnswer && answer.isNotEmpty) {
@@ -146,7 +157,11 @@ class ReviewProvider with ChangeNotifier {
 
     // 3. Assembler les choix et mélanger
     final choices = <String>[correctAnswer, ...distractors.take(3)];
-    choices.shuffle();
+    if (rng != null) {
+      choices.shuffle(rng);
+    } else {
+      choices.shuffle();
+    }
     return choices;
   }
 

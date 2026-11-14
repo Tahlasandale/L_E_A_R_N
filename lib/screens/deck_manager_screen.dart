@@ -163,7 +163,7 @@ class DeckManagerScreen extends StatelessWidget {
                     title: const Text('Paquet Actif', style: TextStyle(color: Catppuccin.text, fontWeight: FontWeight.bold, fontSize: 14)),
                     subtitle: const Text('Inclus dans les révisions du tableau de bord', style: TextStyle(color: Catppuccin.overlay, fontSize: 12)),
                     value: isActive,
-                    activeColor: Catppuccin.green,
+                    activeThumbColor: Catppuccin.green,
                     onChanged: (val) => setState(() => isActive = val),
                   ),
                 ],
@@ -343,20 +343,18 @@ class DeckManagerScreen extends StatelessWidget {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
+                                  Text(
+                                    deck.name,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w900,
+                                      color: deck.isActive ? Catppuccin.text : Catppuccin.subtext,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
                                   Row(
                                     children: [
-                                      Flexible(
-                                        child: Text(
-                                          deck.name,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: TextStyle(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.w900,
-                                            color: deck.isActive ? Catppuccin.text : Catppuccin.subtext,
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
                                       // Badge mode cliquable
                                       GestureDetector(
                                         onTap: () => _toggleDeckMode(context, deck),
@@ -398,16 +396,19 @@ class DeckManagerScreen extends StatelessWidget {
                                           ),
                                         ),
                                       ],
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          '$totalCount cartes • $dueCount dus',
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                            color: Catppuccin.subtext,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ),
                                     ],
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    '$totalCount cartes • $dueCount à réviser',
-                                    style: const TextStyle(
-                                      color: Catppuccin.subtext,
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                    ),
                                   ),
                                 ],
                               ),

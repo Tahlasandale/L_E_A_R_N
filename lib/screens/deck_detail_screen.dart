@@ -188,7 +188,7 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
               if (newName.isNotEmpty && newName != deck.name) {
                 final provider = Provider.of<DeckProvider>(context, listen: false);
                 final success = await provider.renameDeck(deck, newName);
-                if (ctx.mounted) {
+                if (ctx.mounted && mounted) {
                   Navigator.pop(ctx);
                   if (!success) {
                     ScaffoldMessenger.of(context).showSnackBar(

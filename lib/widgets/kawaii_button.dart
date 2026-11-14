@@ -95,8 +95,10 @@ class _KawaiiButtonState extends State<KawaiiButton> {
         ),
         padding: widget.padding,
         child: Center(
-          child: DefaultTextStyle(
+          child: DefaultTextStyle.merge(
             style: TextStyle(
+              fontFamily: 'Nunito',
+              fontFamilyFallback: const ['NotoColorEmoji', 'DroidSansFallback', 'Roboto'],
               color: widget.textColor,
               fontWeight: FontWeight.w900,
               fontSize: 16,

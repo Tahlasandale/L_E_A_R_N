@@ -29,6 +29,7 @@ class Catppuccin {
     return ThemeData(
       brightness: Brightness.dark,
       fontFamily: nunitoFamily,
+      fontFamilyFallback: const ['NotoColorEmoji', 'DroidSansFallback', 'Roboto'],
       scaffoldBackgroundColor: crust,
       primaryColor: blue,
       colorScheme: const ColorScheme.dark(

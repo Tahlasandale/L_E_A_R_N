@@ -50,3 +50,6 @@ app.*.map.json
 # Local build binaries
 *.apk
 /android/build/
+
+# Test Golden Failures
+test/**/failures/

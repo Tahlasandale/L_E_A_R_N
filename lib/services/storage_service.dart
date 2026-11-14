@@ -406,7 +406,7 @@ class StorageService {
       'app': 'Kawaii Flashcards',
       'version': 1,
       'exportedAt': DateTime.now().toIso8601String(),
-      if (extraSettings != null) 'settings': extraSettings,
+      'settings': ?extraSettings,
       'decks': decksData,
     };
 

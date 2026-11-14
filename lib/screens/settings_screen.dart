@@ -463,9 +463,11 @@ class SettingsScreen extends StatelessWidget {
                   children: [
                     Text('📦', style: TextStyle(fontSize: 24)),
                     SizedBox(width: 10),
-                    Text(
-                      'Sauvegarde & Restauration (JSON)',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Catppuccin.text),
+                    Expanded(
+                      child: Text(
+                        'Sauvegarde & Restauration (JSON)',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Catppuccin.text),
+                      ),
                     ),
                   ],
                 ),

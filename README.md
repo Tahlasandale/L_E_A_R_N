@@ -21,7 +21,7 @@
   <img src="https://img.shields.io/badge/Database-Isar%20NoSQL-4A154B" alt="Isar" />
   <img src="https://img.shields.io/badge/Algorithm-FSRS%20%2F%20SM--2-89B4FA" alt="FSRS" />
   <img src="https://img.shields.io/badge/Theme-Catppuccin%20Macchiato-1E1E2E?logoColor=CDD6F4" alt="Catppuccin Macchiato" />
-  <img src="https://img.shields.io/badge/Tests-47%2F47%20Passing-A6E3A1" alt="Tests" />
+  <img src="https://img.shields.io/badge/Tests-49%2F49%20Passing-A6E3A1" alt="Tests" />
   <img src="https://img.shields.io/badge/License-MIT-fab387" alt="License" />
 </p>
 
@@ -175,7 +175,7 @@ flutter pub get
 ```bash
 flutter test
 ```
-*Résultat : 47/47 tests réussis (dont 6 tests de captures d'écran Golden automatisés).*
+*Résultat : 49/49 tests réussis (dont 6 tests de captures d'écran Golden automatisés).*
 
 ### Lancer l'analyse statique
 ```bash

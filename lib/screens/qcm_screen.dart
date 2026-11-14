@@ -35,6 +35,7 @@ class _QcmScreenState extends State<QcmScreen> {
 
   Timer? _phase1Timer;
   Timer? _phase2Timer;
+  VoidCallback? _pendingRateCallback;
 
   // Suivi du score pour l'écran de fin
   int _correctCount = 0;
@@ -52,6 +53,8 @@ class _QcmScreenState extends State<QcmScreen> {
   void dispose() {
     _phase1Timer?.cancel();
     _phase2Timer?.cancel();
+    _pendingRateCallback?.call();
+    _pendingRateCallback = null;
     super.dispose();
   }
 
@@ -95,12 +98,17 @@ class _QcmScreenState extends State<QcmScreen> {
       if (isCorrect) _correctCount++;
     });
 
-    reviewProvider.rateCurrentCard(
-      rating: isCorrect ? 4 : 1,
-      isIntensiveMinutes: widget.isIntensiveMinutes,
-      desiredRetention: settingsProvider.desiredRetention,
-      storage: storage,
-    );
+    // Enregistrer l'action de notation pour l'exécuter à la fin de la transition
+    final rating = isCorrect ? 4 : 1;
+    final desiredRetention = settingsProvider.desiredRetention;
+    _pendingRateCallback = () {
+      reviewProvider.rateCurrentCard(
+        rating: rating,
+        isIntensiveMinutes: widget.isIntensiveMinutes,
+        desiredRetention: desiredRetention,
+        storage: storage,
+      );
+    };
 
     // Phase 1 : Affichage immédiat du feedback vert/rouge sur les boutons (450ms)
     _phase1Timer?.cancel();
@@ -115,6 +123,10 @@ class _QcmScreenState extends State<QcmScreen> {
       _phase2Timer?.cancel();
       _phase2Timer = Timer(Duration(milliseconds: durationMs), () {
         if (!mounted) return;
+        // Appliquer la notation maintenant : la carte avance et notifie la nouvelle carte
+        _pendingRateCallback?.call();
+        _pendingRateCallback = null;
+
         if (!reviewProvider.isSessionFinished) {
           _loadChoicesForCurrentCard();
         } else {
@@ -129,6 +141,7 @@ class _QcmScreenState extends State<QcmScreen> {
   void _restartColle() {
     _phase1Timer?.cancel();
     _phase2Timer?.cancel();
+    _pendingRateCallback = null;
     final reviewProvider = Provider.of<ReviewProvider>(context, listen: false);
     setState(() {
       _correctCount = 0;
@@ -214,7 +227,7 @@ class _QcmScreenState extends State<QcmScreen> {
               Expanded(
                 flex: 4,
                 child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 320),
+                  duration: const Duration(milliseconds: 300),
                   transitionBuilder: (child, animation) {
                     return SlideTransition(
                       position: Tween<Offset>(
@@ -261,16 +274,14 @@ class _QcmScreenState extends State<QcmScreen> {
                   children: [
                     // Bascule fluide entre les 4 lignes de choix et la grande bonne réponse
                     AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 260),
+                      duration: const Duration(milliseconds: 300),
                       transitionBuilder: (child, animation) {
-                        return FadeTransition(
-                          opacity: animation,
-                          child: ScaleTransition(
-                            scale: Tween<double>(begin: 0.96, end: 1.0).animate(
-                              CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
-                            ),
-                            child: child,
-                          ),
+                        return SlideTransition(
+                          position: Tween<Offset>(
+                            begin: const Offset(0.08, 0.0),
+                            end: Offset.zero,
+                          ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic)),
+                          child: FadeTransition(opacity: animation, child: child),
                         );
                       },
                       child: _showBigCorrectAnswer

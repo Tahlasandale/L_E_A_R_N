@@ -158,6 +158,124 @@ class _QcmScreenState extends State<QcmScreen> {
     _loadChoicesForCurrentCard();
   }
 
+  void _goToPreviousCard() {
+    final reviewProvider = Provider.of<ReviewProvider>(context, listen: false);
+    if (!reviewProvider.canGoPrevious) return;
+    HapticFeedback.lightImpact();
+    _phase1Timer?.cancel();
+    _phase2Timer?.cancel();
+    _pendingRateCallback?.call();
+    _pendingRateCallback = null;
+    reviewProvider.previousCard();
+    _loadChoicesForCurrentCard();
+  }
+
+  void _goToNextCard() {
+    final reviewProvider = Provider.of<ReviewProvider>(context, listen: false);
+    if (!reviewProvider.canGoNext) return;
+    HapticFeedback.lightImpact();
+    _phase1Timer?.cancel();
+    _phase2Timer?.cancel();
+    _pendingRateCallback?.call();
+    _pendingRateCallback = null;
+    reviewProvider.nextCard();
+    _loadChoicesForCurrentCard();
+  }
+
+  void _confirmDeleteCard() {
+    final reviewProvider = Provider.of<ReviewProvider>(context, listen: false);
+    final card = reviewProvider.currentCard;
+    if (card == null) return;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Catppuccin.mantle,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: const Row(
+          children: [
+            Text('🗑️ ', style: TextStyle(fontSize: 22)),
+            Text(
+              'Supprimer la carte ?',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Catppuccin.red),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Cette carte sera définitivement supprimée du paquet :',
+              style: TextStyle(color: Catppuccin.subtext, fontSize: 13),
+            ),
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Catppuccin.surface0,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Catppuccin.surface1),
+              ),
+              child: Text(
+                card.front,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Catppuccin.text,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Annuler', style: TextStyle(color: Catppuccin.subtext)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Catppuccin.red,
+              foregroundColor: Catppuccin.crust,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              HapticFeedback.mediumImpact();
+              _phase1Timer?.cancel();
+              _phase2Timer?.cancel();
+              _pendingRateCallback?.call();
+              _pendingRateCallback = null;
+
+              final storage = Provider.of<StorageService>(context, listen: false);
+              final deckProvider = Provider.of<DeckProvider>(context, listen: false);
+              await reviewProvider.deleteCurrentCard(storage: storage, deckProvider: deckProvider);
+
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    backgroundColor: Catppuccin.mantle,
+                    duration: Duration(milliseconds: 1200),
+                    content: Text('🗑️ Carte supprimée !', style: TextStyle(color: Catppuccin.red, fontWeight: FontWeight.bold)),
+                  ),
+                );
+
+                if (!reviewProvider.isSessionFinished) {
+                  _loadChoicesForCurrentCard();
+                } else {
+                  setState(() {});
+                }
+              }
+            },
+            child: const Text('Supprimer 🗑️', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final reviewProvider = Provider.of<ReviewProvider>(context);
@@ -170,15 +288,37 @@ class _QcmScreenState extends State<QcmScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          'Colle ${reviewProvider.progressNumber} / ${reviewProvider.totalInSession}',
-          style: const TextStyle(
-            color: Catppuccin.sky,
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-          ),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 16),
+              color: reviewProvider.canGoPrevious ? Catppuccin.sky : Catppuccin.surface1,
+              tooltip: 'Question précédente',
+              onPressed: reviewProvider.canGoPrevious ? _goToPreviousCard : null,
+            ),
+            Text(
+              '${reviewProvider.progressNumber} / ${reviewProvider.totalInSession}',
+              style: const TextStyle(
+                color: Catppuccin.sky,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
+              color: reviewProvider.canGoNext ? Catppuccin.sky : Catppuccin.surface1,
+              tooltip: 'Question suivante',
+              onPressed: reviewProvider.canGoNext ? _goToNextCard : null,
+            ),
+          ],
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.delete_outline_rounded, color: Catppuccin.red),
+            tooltip: 'Supprimer cette carte',
+            onPressed: _confirmDeleteCard,
+          ),
           IconButton(
             icon: Icon(
               Icons.shuffle_rounded,
@@ -188,6 +328,7 @@ class _QcmScreenState extends State<QcmScreen> {
             onPressed: () {
               HapticFeedback.lightImpact();
               reviewProvider.toggleRandomOrder();
+              _loadChoicesForCurrentCard();
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   backgroundColor: Catppuccin.mantle,
@@ -206,13 +347,13 @@ class _QcmScreenState extends State<QcmScreen> {
             },
           ),
           const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 14.0),
+            padding: EdgeInsets.only(right: 10.0, left: 4.0),
             child: Center(
               child: Text(
                 "(ง'̀-'́)ง",
                 style: TextStyle(
                   color: Catppuccin.blue,
-                  fontSize: 20,
+                  fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -256,13 +397,16 @@ class _QcmScreenState extends State<QcmScreen> {
                       ],
                     ),
                     child: Center(
-                      child: AdaptiveText(
-                        card.front,
-                        maxFontSize: 26,
-                        minFontSize: 14,
-                        maxLines: 4, // Permet les retours à la ligne pour questions longues
-                        fontWeight: FontWeight.w900,
-                        color: Catppuccin.text,
+                      child: SingleChildScrollView(
+                        physics: const BouncingScrollPhysics(),
+                        child: AdaptiveText(
+                          card.front,
+                          maxFontSize: 26,
+                          minFontSize: 16,
+                          maxLines: 8, // Permet les retours à la ligne amples et défilement pour questions longues
+                          fontWeight: FontWeight.w900,
+                          color: Catppuccin.text,
+                        ),
                       ),
                     ),
                   ),

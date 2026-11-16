@@ -2,7 +2,6 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../theme/catppuccin.dart';
-import 'adaptive_text.dart';
 
 class FlipCard3D extends StatefulWidget {
   final String frontText;
@@ -116,6 +115,13 @@ class _FlipCard3DState extends State<FlipCard3D>
     );
   }
 
+  double _calculateFontSize(String text) {
+    final len = text.trim().length;
+    if (len <= 40) return 25.0;
+    if (len <= 120) return 20.0;
+    return 17.5;
+  }
+
   Widget _buildCardFace({
     required String tag,
     required Color tagColor,
@@ -159,15 +165,25 @@ class _FlipCard3DState extends State<FlipCard3D>
               ),
             ),
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 24),
           Expanded(
             child: Center(
-              child: AdaptiveText(
-                content,
-                maxFontSize: 28,
-                minFontSize: 14,
-                fontWeight: FontWeight.w900,
-                color: Catppuccin.text,
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 6.0),
+                  child: Text(
+                    content,
+                    textAlign: TextAlign.center,
+                    softWrap: true,
+                    style: TextStyle(
+                      fontSize: _calculateFontSize(content),
+                      fontWeight: FontWeight.w800,
+                      color: Catppuccin.text,
+                      height: 1.35,
+                    ),
+                  ),
+                ),
               ),
             ),
           ),

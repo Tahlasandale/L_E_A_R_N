@@ -75,6 +75,32 @@ void main() {
     expect(flipped, isTrue);
   });
 
+  testWidgets('FlipCard3D gère un texte très long avec défilement sans déborder', (WidgetTester tester) async {
+    final longQuestion = 'Question très longue avec beaucoup de détails techniques et mathématiques ' * 5;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: FlipCard3D(
+              frontText: longQuestion,
+              backText: 'Réponse',
+              isFlipped: false,
+              onFlip: () {},
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byType(SingleChildScrollView), findsOneWidget);
+    expect(find.text(longQuestion), findsOneWidget);
+
+    // Faire défiler verticalement
+    await tester.drag(find.byType(SingleChildScrollView), const Offset(0, -100));
+    await tester.pumpAndSettle();
+  });
+
   testWidgets('AdaptiveText affiche le texte sur une ligne sans déborder', (WidgetTester tester) async {
     await tester.pumpWidget(
       const MaterialApp(

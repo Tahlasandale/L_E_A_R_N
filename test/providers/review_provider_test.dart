@@ -1,6 +1,17 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:isar/isar.dart';
 import 'package:learn_flashcards/models/flashcard.dart';
 import 'package:learn_flashcards/providers/review_provider.dart';
+import 'package:learn_flashcards/services/storage_service.dart';
+
+class _MockStorageService extends StorageService {
+  final List<Id> deletedCardIds = [];
+
+  @override
+  Future<void> deleteCard(Id cardId) async {
+    deletedCardIds.add(cardId);
+  }
+}
 
 void main() {
   group('ReviewProvider - File d\'attente & Ordonnancement', () {
@@ -101,6 +112,77 @@ void main() {
       expect(choices.length, 4);
       expect(choices.contains('AnsA'), isTrue);
       expect(choices.toSet().length, 4);
+    });
+  });
+
+  group('ReviewProvider - Navigation Précédente / Suivante', () {
+    test('Navigation fluide entre cartes avec canGoPrevious et canGoNext', () {
+      final card1 = Flashcard()..id = 1..front = 'Q1'..back = 'A1';
+      final card2 = Flashcard()..id = 2..front = 'Q2'..back = 'A2';
+      final card3 = Flashcard()..id = 3..front = 'Q3'..back = 'A3';
+
+      final provider = ReviewProvider();
+      provider.initSession(cards: [card1, card2, card3]);
+
+      // Sur la 1ère carte
+      expect(provider.currentIndex, 0);
+      expect(provider.canGoPrevious, isFalse);
+      expect(provider.canGoNext, isTrue);
+
+      // Avance à la 2ème carte
+      provider.nextCard();
+      expect(provider.currentIndex, 1);
+      expect(provider.canGoPrevious, isTrue);
+      expect(provider.canGoNext, isTrue);
+
+      // Avance à la 3ème carte (dernière)
+      provider.nextCard();
+      expect(provider.currentIndex, 2);
+      expect(provider.canGoPrevious, isTrue);
+      expect(provider.canGoNext, isFalse);
+
+      // Depuis la dernière carte, recule à la 2ème carte
+      provider.previousCard();
+      expect(provider.currentIndex, 1);
+      expect(provider.canGoPrevious, isTrue);
+      expect(provider.canGoNext, isTrue);
+
+      // Re-avance à la dernière carte
+      provider.nextCard();
+      expect(provider.currentIndex, 2);
+      expect(provider.currentCard?.id, 3);
+    });
+  });
+
+  group('ReviewProvider - Suppression de la Carte Courante', () {
+    test('deleteCurrentCard supprime de storage et de la file de révision', () async {
+      final mockStorage = _MockStorageService();
+      final card1 = Flashcard()..id = 101..front = 'Q1'..back = 'A1';
+      final card2 = Flashcard()..id = 102..front = 'Q2'..back = 'A2';
+      final card3 = Flashcard()..id = 103..front = 'Q3'..back = 'A3';
+
+      final provider = ReviewProvider();
+      provider.initSession(cards: [card1, card2, card3]);
+
+      // Supprimer la première carte (101)
+      await provider.deleteCurrentCard(storage: mockStorage);
+      expect(mockStorage.deletedCardIds, [101]);
+      expect(provider.reviewQueue.length, 2);
+      expect(provider.currentCard?.id, 102);
+
+      // Avancer sur la dernière carte (103) et la supprimer
+      provider.nextCard();
+      expect(provider.currentCard?.id, 103);
+      await provider.deleteCurrentCard(storage: mockStorage);
+      expect(mockStorage.deletedCardIds, [101, 103]);
+      expect(provider.reviewQueue.length, 1);
+      // Index replacé sur la dernière restante (102)
+      expect(provider.currentCard?.id, 102);
+
+      // Supprimer la seule restante
+      await provider.deleteCurrentCard(storage: mockStorage);
+      expect(provider.reviewQueue.isEmpty, isTrue);
+      expect(provider.isSessionFinished, isTrue);
     });
   });
 }

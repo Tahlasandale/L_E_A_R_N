@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../models/flashcard.dart';
 import '../services/fsrs_service.dart';
 import '../services/storage_service.dart';
+import 'deck_provider.dart';
 import 'streak_provider.dart';
 
 class ReviewProvider with ChangeNotifier {
@@ -27,6 +28,50 @@ class ReviewProvider with ChangeNotifier {
   bool get isSessionFinished => _currentIndex >= _reviewQueue.length;
   int get totalInSession => _reviewQueue.length;
   int get progressNumber => _currentIndex + 1;
+
+  bool get canGoPrevious => _currentIndex > 0;
+  bool get canGoNext => _currentIndex < _reviewQueue.length - 1;
+
+  /// Recule à la carte précédente dans la session
+  void previousCard() {
+    if (!canGoPrevious) return;
+    _currentIndex--;
+    _isFlipped = false;
+    notifyListeners();
+  }
+
+  /// Avance à la carte suivante dans la session
+  void nextCard() {
+    if (!canGoNext) return;
+    _currentIndex++;
+    _isFlipped = false;
+    notifyListeners();
+  }
+
+  /// Supprime définitivement la carte courante de la base et de la file de révision
+  Future<void> deleteCurrentCard({
+    required StorageService storage,
+    DeckProvider? deckProvider,
+  }) async {
+    final card = currentCard;
+    if (card == null) return;
+
+    final cardId = card.id;
+    if (deckProvider != null) {
+      await deckProvider.deleteCard(cardId);
+    } else {
+      await storage.deleteCard(cardId);
+    }
+
+    _reviewQueue.removeAt(_currentIndex);
+    _isFlipped = false;
+
+    if (_currentIndex >= _reviewQueue.length && _reviewQueue.isNotEmpty) {
+      _currentIndex = _reviewQueue.length - 1;
+    }
+
+    notifyListeners();
+  }
 
   /// Initialise la file d'attente pour la session
   void initSession({

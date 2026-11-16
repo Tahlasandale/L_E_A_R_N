@@ -3,7 +3,6 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:share_plus/share_plus.dart';
 import '../providers/deck_provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/streak_provider.dart';
@@ -114,20 +113,24 @@ class SettingsScreen extends StatelessWidget {
                     height: 48,
                     onPressed: () async {
                       Navigator.pop(ctx);
-                      final savedPath = await FileSaverService.saveFile(fileName, jsonContent);
-                      if (context.mounted) {
+                      final savedPath = await FileSaverService.pickAndSaveFile(
+                        fileName,
+                        jsonContent,
+                        mimeType: 'application/json',
+                      );
+                      if (context.mounted && savedPath != null) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             backgroundColor: Catppuccin.mantle,
                             content: Text(
-                              savedPath != null ? '💾 Sauvegardé : $savedPath' : '⚠️ Erreur de sauvegarde.',
-                              style: TextStyle(color: savedPath != null ? Catppuccin.green : Catppuccin.red, fontWeight: FontWeight.bold),
+                              '💾 Sauvegardé : $savedPath',
+                              style: const TextStyle(color: Catppuccin.green, fontWeight: FontWeight.bold),
                             ),
                           ),
                         );
                       }
                     },
-                    child: const Text('💾 Téléchargements'),
+                    child: const Text('💾 Enregistrer'),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -136,11 +139,11 @@ class SettingsScreen extends StatelessWidget {
                     height: 48,
                     onPressed: () async {
                       Navigator.pop(ctx);
-                      await SharePlus.instance.share(
-                        ShareParams(
-                          text: jsonContent,
-                          subject: fileName,
-                        ),
+                      await FileSaverService.shareAsFile(
+                        fileName: fileName,
+                        content: jsonContent,
+                        mimeType: 'application/json',
+                        subject: fileName,
                       );
                     },
                     child: const Text('📤 Partager'),
@@ -583,7 +586,7 @@ class SettingsScreen extends StatelessWidget {
                 ),
                 SizedBox(height: 12),
                 Text(
-                  'Kawaii Flashcards v1.1.4\n'
+                  'Kawaii Flashcards v1.1.5\n'
                   '• Moteur de répétition espacée FSRS / SM-2 avec rétention paramétrable (70%-98%)\n'
                   '• Série quotidienne (streak) avec tolérance bienveillante de 2 jours consécutifs\n'
                   '• Rappels quotidiens fiabilisés & notifications prédictives FSRS\n'

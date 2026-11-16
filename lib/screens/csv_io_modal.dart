@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:provider/provider.dart';
 import '../models/deck.dart';
 import '../providers/deck_provider.dart';
@@ -417,7 +416,7 @@ class CsvIoModal {
                     ),
                     const SizedBox(height: 24),
 
-                    // Deux options d'export : Partager ou Téléchargements
+                    // Deux options d'export : Enregistrer (avec choix de dossier) ou Partager (en fichier)
                     Row(
                       children: [
                         Expanded(
@@ -433,25 +432,29 @@ class CsvIoModal {
 
                               final cleanName = deck.name.replaceAll(RegExp(r'[^\w\s\-]'), '').trim().replaceAll(' ', '_');
                               final fileName = '${cleanName.isEmpty ? 'deck' : cleanName}_export.csv';
-                              final savedPath = await FileSaverService.saveCsv(fileName, csvContent);
+                              final savedPath = await FileSaverService.pickAndSaveFile(
+                                fileName,
+                                csvContent,
+                                mimeType: 'text/csv',
+                              );
 
                               if (context.mounted) {
                                 Navigator.pop(context);
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    backgroundColor: Catppuccin.mantle,
-                                    duration: const Duration(seconds: 3),
-                                    content: Text(
-                                      savedPath != null
-                                          ? '💾 Enregistré : $savedPath'
-                                          : '⚠️ Impossible d\'enregistrer le fichier.',
-                                      style: TextStyle(
-                                        color: savedPath != null ? Catppuccin.green : Catppuccin.red,
-                                        fontWeight: FontWeight.bold,
+                                if (savedPath != null) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      backgroundColor: Catppuccin.mantle,
+                                      duration: const Duration(seconds: 3),
+                                      content: Text(
+                                        '💾 Enregistré : $savedPath',
+                                        style: const TextStyle(
+                                          color: Catppuccin.green,
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                );
+                                  );
+                                }
                               }
                             },
                             child: const Text('Enregistrer 💾', style: TextStyle(fontSize: 13)),
@@ -469,12 +472,14 @@ class CsvIoModal {
                                 lineEnding: effectiveCard,
                               );
 
-                              await SharePlus.instance.share(
-                                ShareParams(
-                                  text: csvContent,
-                                  subject: 'Export ${deck.name}.csv',
-                                  title: 'Export ${deck.name}',
-                                ),
+                              final cleanName = deck.name.replaceAll(RegExp(r'[^\w\s\-]'), '').trim().replaceAll(' ', '_');
+                              final fileName = '${cleanName.isEmpty ? 'deck' : cleanName}_export.csv';
+
+                              await FileSaverService.shareAsFile(
+                                fileName: fileName,
+                                content: csvContent,
+                                mimeType: 'text/csv',
+                                subject: 'Export ${deck.name}.csv',
                               );
 
                               if (context.mounted) {

@@ -31,6 +31,10 @@ subprojects {
                     setNamespace.invoke(android, ns)
                 }
             } catch (_: Exception) {}
+            try {
+                val setCompileSdkVersion = android.javaClass.getMethod("compileSdkVersion", Int::class.javaPrimitiveType)
+                setCompileSdkVersion.invoke(android, 34)
+            } catch (_: Exception) {}
         }
     }
 }

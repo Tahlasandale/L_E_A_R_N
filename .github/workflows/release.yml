@@ -41,12 +41,15 @@ jobs:
       - name: 📦 Install Dependencies
         run: flutter pub get
 
-      - name: 🩹 Patch Legacy Android Dependencies Namespace
+      - name: 🩹 Patch Legacy Android Dependencies (Namespace & CompileSdk)
         run: |
           for file in $(find "${PUB_CACHE:-$HOME/.pub-cache}" -name "build.gradle" -path "*/isar_flutter_libs*/android/build.gradle" 2>/dev/null); do
-            if [ -f "$file" ] && ! grep -q "namespace" "$file"; then
-              echo "Patching namespace in $file"
-              sed -i "s/apply plugin: 'com.android.library'/apply plugin: 'com.android.library'\n\nandroid {\n    namespace 'dev.isar.isar_flutter_libs'\n}/" "$file"
+            if [ -f "$file" ]; then
+              echo "Patching isar_flutter_libs in $file"
+              sed -i "s/compileSdkVersion [0-9]\+/compileSdkVersion 34/g" "$file"
+              if ! grep -q "namespace" "$file"; then
+                sed -i "s/apply plugin: 'com.android.library'/apply plugin: 'com.android.library'\n\nandroid {\n    namespace 'dev.isar.isar_flutter_libs'\n    compileSdkVersion 34\n}/" "$file"
+              fi
             fi
           done
 

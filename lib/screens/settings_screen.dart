@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../providers/deck_provider.dart';
 import '../providers/settings_provider.dart';
+import '../providers/streak_provider.dart';
 import '../services/file_saver/file_saver.dart';
 import '../services/notification_service.dart';
 import '../services/storage_service.dart';
@@ -70,13 +71,17 @@ class SettingsScreen extends StatelessWidget {
   Future<void> _handleExportJson(BuildContext context) async {
     final storage = Provider.of<StorageService>(context, listen: false);
     final settings = Provider.of<SettingsProvider>(context, listen: false);
+    final streak = Provider.of<StreakProvider>(context, listen: false);
 
     final extraSettings = {
       'desiredRetention': settings.desiredRetention,
       'qcmGoodAnswerDuration': settings.qcmGoodAnswerDuration,
     };
 
-    final jsonContent = await storage.exportFullBackupJson(extraSettings: extraSettings);
+    final jsonContent = await storage.exportFullBackupJson(
+      extraSettings: extraSettings,
+      streakData: streak.toJson(),
+    );
     final dateStr = DateTime.now().toIso8601String().substring(0, 10).replaceAll('-', '');
     final fileName = 'Kawaii_Flashcards_Backup_$dateStr.json';
 
@@ -174,9 +179,13 @@ class SettingsScreen extends StatelessWidget {
       if (!context.mounted) return;
       final deckProvider = Provider.of<DeckProvider>(context, listen: false);
       final settingsProvider = Provider.of<SettingsProvider>(context, listen: false);
+      final streakProvider = Provider.of<StreakProvider>(context, listen: false);
 
       // Décodage et restauration
-      final stats = await deckProvider.importFullBackup(content);
+      final stats = await deckProvider.importFullBackup(
+        content,
+        onStreakImport: (streakData) => streakProvider.importJson(streakData),
+      );
 
       // Si le JSON contient des réglages, les appliquer
       try {
@@ -516,15 +525,17 @@ class SettingsScreen extends StatelessWidget {
                   children: [
                     Text('🔔', style: TextStyle(fontSize: 24)),
                     SizedBox(width: 10),
-                    Text(
-                      'Rappels Prédictifs FSRS',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Catppuccin.text),
+                    Expanded(
+                      child: Text(
+                        'Rappels Streak & FSRS',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Catppuccin.text),
+                      ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 12),
                 const Text(
-                  'L\'application calcule automatiquement le moment où un volume critique de cartes arrive à échéance selon ton rythme FSRS, et planifie une notification sans consommer de batterie en arrière-plan.',
+                  'L\'application veille sur ta série 🔥 (rappel quotidien et alerte d\'urgence si 1 jour est sauté) et planifie des alertes quand des cartes arrivent à échéance selon ton rythme FSRS, sans vider la batterie.',
                   style: TextStyle(color: Catppuccin.subtext, fontSize: 13, height: 1.4),
                 ),
                 const SizedBox(height: 20),

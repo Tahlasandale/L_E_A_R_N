@@ -119,8 +119,11 @@ class DeckProvider with ChangeNotifier {
   }
 
   /// Importe un backup global JSON avec fusion intelligente et recharge les paquets
-  Future<Map<String, int>> importFullBackup(String jsonStr) async {
-    final stats = await _storage.importFullBackupJson(jsonStr);
+  Future<Map<String, int>> importFullBackup(
+    String jsonStr, {
+    void Function(Map<String, dynamic> streakData)? onStreakImport,
+  }) async {
+    final stats = await _storage.importFullBackupJson(jsonStr, onStreakImport: onStreakImport);
     await loadDecks();
     return stats;
   }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/deck_provider.dart';
 import '../providers/settings_provider.dart';
+import '../providers/streak_provider.dart';
 import '../services/notification_service.dart';
 import '../services/storage_service.dart';
 import '../theme/catppuccin.dart';
@@ -34,11 +35,17 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
     _currentIndex = widget.initialIndex;
     _pageController = PageController(initialPage: _currentIndex);
     WidgetsBinding.instance.addObserver(this);
-    // Charger les paquets au démarrage et notifier si auto-restauration
+    // Demander proactivement les permissions de notification
+    NotificationService().requestPermissions();
+
+    // Charger les paquets et actualiser la streak au démarrage
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final deckProvider = Provider.of<DeckProvider>(context, listen: false);
+      final streakProvider = Provider.of<StreakProvider>(context, listen: false);
       final storage = Provider.of<StorageService>(context, listen: false);
+
       deckProvider.loadDecks();
+      streakProvider.checkStreakStatus();
 
       if (storage.didAutoRestoreFromMirror && mounted) {
         storage.didAutoRestoreFromMirror = false;
@@ -73,14 +80,20 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused || state == AppLifecycleState.detached) {
-      // Lorsque l'application passe en arrière-plan, programmer la notification prédictive (uniquement sur paquets actifs)
+    if (state == AppLifecycleState.resumed) {
+      // Re-vérifier l'état de la streak au retour au premier plan
+      Provider.of<StreakProvider>(context, listen: false).checkStreakStatus();
+    } else if (state == AppLifecycleState.paused || state == AppLifecycleState.detached) {
+      // Lorsque l'application passe en arrière-plan, programmer les notifications de streak et FSRS
       final provider = Provider.of<DeckProvider>(context, listen: false);
       final settingsProvider = Provider.of<SettingsProvider>(context, listen: false);
+      final streakProvider = Provider.of<StreakProvider>(context, listen: false);
       final activeCards = provider.getActiveCardsPool();
+
       NotificationService().scheduleOnAppPause(
         allCards: activeCards,
         desiredRetention: settingsProvider.desiredRetention,
+        streakProvider: streakProvider,
       );
     }
   }

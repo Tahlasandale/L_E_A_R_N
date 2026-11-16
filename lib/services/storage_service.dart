@@ -378,8 +378,11 @@ class StorageService {
     return allDue;
   }
 
-  /// Exporte l'intégralité de la base de données (paquets, cartes avec toutes les métriques FSRS et réglages)
-  Future<String> exportFullBackupJson({Map<String, dynamic>? extraSettings}) async {
+  /// Exporte l'intégralité de la base de données (paquets, cartes avec toutes les métriques FSRS, réglages et streak)
+  Future<String> exportFullBackupJson({
+    Map<String, dynamic>? extraSettings,
+    Map<String, dynamic>? streakData,
+  }) async {
     final allDecks = await getAllDecks();
     final List<Map<String, dynamic>> decksData = [];
 
@@ -407,6 +410,7 @@ class StorageService {
       'version': 1,
       'exportedAt': DateTime.now().toIso8601String(),
       'settings': ?extraSettings,
+      'streak': ?streakData,
       'decks': decksData,
     };
 
@@ -415,7 +419,10 @@ class StorageService {
 
   /// Importe une sauvegarde JSON avec Fusion Intelligente Systématique
   /// Retourne un résumé : {'decksAdded': count, 'cardsAdded': count, 'cardsUpdated': count}
-  Future<Map<String, int>> importFullBackupJson(String jsonStr) async {
+  Future<Map<String, int>> importFullBackupJson(
+    String jsonStr, {
+    void Function(Map<String, dynamic> streakData)? onStreakImport,
+  }) async {
     int decksAdded = 0;
     int cardsAdded = 0;
     int cardsUpdated = 0;
@@ -423,6 +430,10 @@ class StorageService {
     final dynamic parsed = jsonDecode(jsonStr);
     if (parsed is! Map<String, dynamic>) {
       throw const FormatException('Le fichier de sauvegarde n\'est pas un objet JSON valide.');
+    }
+
+    if (parsed['streak'] is Map) {
+      onStreakImport?.call(Map<String, dynamic>.from(parsed['streak'] as Map));
     }
 
     final rawDecks = parsed['decks'];

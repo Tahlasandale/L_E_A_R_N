@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../models/flashcard.dart';
 import '../services/fsrs_service.dart';
 import '../services/storage_service.dart';
+import 'streak_provider.dart';
 
 class ReviewProvider with ChangeNotifier {
   final Random? random;
@@ -83,6 +84,7 @@ class ReviewProvider with ChangeNotifier {
     required bool isIntensiveMinutes,
     double desiredRetention = 0.90,
     StorageService? storage,
+    StreakProvider? streakProvider,
   }) {
     final card = currentCard;
     if (card == null) return null;
@@ -105,6 +107,9 @@ class ReviewProvider with ChangeNotifier {
 
     // Persister si storage disponible
     storage?.saveCard(card);
+
+    // Mettre à jour la streak de révision
+    streakProvider?.recordReview();
 
     // Si rating 1 (Again), réinsérer la carte à la fin de la file de la session en cours
     if (rating == 1) {

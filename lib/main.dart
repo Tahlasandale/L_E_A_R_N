@@ -6,6 +6,7 @@ import 'models/flashcard.dart';
 import 'providers/deck_provider.dart';
 import 'providers/review_provider.dart';
 import 'providers/settings_provider.dart';
+import 'providers/streak_provider.dart';
 import 'screens/deck_detail_screen.dart';
 import 'screens/main_navigation_screen.dart';
 import 'screens/qcm_screen.dart';
@@ -65,6 +66,13 @@ void main() async {
     debugPrint('SettingsProvider init error: $e');
   }
 
+  final streakProvider = StreakProvider();
+  try {
+    await streakProvider.init();
+  } catch (e) {
+    debugPrint('StreakProvider init error: $e');
+  }
+
   final deckProvider = DeckProvider(storage);
   final reviewProvider = ReviewProvider();
 
@@ -105,6 +113,7 @@ void main() async {
       providers: [
         Provider<StorageService>.value(value: storage),
         ChangeNotifierProvider<SettingsProvider>.value(value: settingsProvider),
+        ChangeNotifierProvider<StreakProvider>.value(value: streakProvider),
         ChangeNotifierProvider<DeckProvider>.value(value: deckProvider),
         ChangeNotifierProvider<ReviewProvider>.value(value: reviewProvider),
       ],

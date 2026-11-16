@@ -6,6 +6,7 @@ import '../models/flashcard.dart';
 import '../providers/deck_provider.dart';
 import '../providers/review_provider.dart';
 import '../providers/settings_provider.dart';
+import '../providers/streak_provider.dart';
 import '../services/storage_service.dart';
 import '../theme/catppuccin.dart';
 import '../widgets/adaptive_text.dart';
@@ -87,6 +88,7 @@ class _QcmScreenState extends State<QcmScreen> {
     final reviewProvider = Provider.of<ReviewProvider>(context, listen: false);
     final storage = Provider.of<StorageService>(context, listen: false);
     final settingsProvider = Provider.of<SettingsProvider>(context, listen: false);
+    final streakProvider = Provider.of<StreakProvider>(context, listen: false);
     final card = reviewProvider.currentCard;
     if (card == null) return;
 
@@ -107,6 +109,7 @@ class _QcmScreenState extends State<QcmScreen> {
         isIntensiveMinutes: widget.isIntensiveMinutes,
         desiredRetention: desiredRetention,
         storage: storage,
+        streakProvider: streakProvider,
       );
     };
 

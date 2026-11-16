@@ -21,7 +21,7 @@
   <img src="https://img.shields.io/badge/Database-Isar%20NoSQL-4A154B" alt="Isar" />
   <img src="https://img.shields.io/badge/Algorithm-FSRS%20%2F%20SM--2-89B4FA" alt="FSRS" />
   <img src="https://img.shields.io/badge/Theme-Catppuccin%20Macchiato-1E1E2E?logoColor=CDD6F4" alt="Catppuccin Macchiato" />
-  <img src="https://img.shields.io/badge/Tests-49%2F49%20Passing-A6E3A1" alt="Tests" />
+  <img src="https://img.shields.io/badge/Tests-56%2F56%20Passing-A6E3A1" alt="Tests" />
   <img src="https://img.shields.io/badge/License-MIT-fab387" alt="License" />
 </p>
 
@@ -59,6 +59,18 @@
 ---
 
 ## ✨ Points Forts & Fonctionnalités
+
+### 🔥 Série Quotidienne (Streak) & Tolérance 2 Jours
+Suivez votre régularité directement depuis l'écran d'accueil avec une mécanique bienveillante et motivante :
+- **Affichage sur l'accueil** : colonne dédiée dans la carte de progression (`Série 🔥`), badge interactif dans l'en-tête de l'application et bannière d'état dynamique.
+- **Règle de tolérance 2 jours consécutifs** : si vous sautez une seule journée, votre série n'est **pas perdue** ! L'application passe en statut `⚠️ Série en danger !` pour vous encourager à réviser avant minuit. La série ne retombe à zéro que si vous manquez 2 jours consécutifs.
+- **Modal explicatif détaillé** : un tap sur le badge ouvre les statistiques complètes (série en cours, record personnel et règles de tolérance).
+
+### 🔔 Rappels Quotidiens & Notifications Prédictives Fiabilisées
+- **Compatibilité Android 13+ & Alarmes exactes** : demande proactive des permissions système (`POST_NOTIFICATIONS`, `SCHEDULE_EXACT_ALARM`) et récepteurs de notifications planifiées fiabilisés au démarrage.
+- **Rappel quotidien de streak** : notification planifiée chaque jour à 19h30 pour entretenir la flamme, avec rappel urgent si la série est en péril.
+- **Relance intelligente FSRS** : planification même lorsque des cartes sont déjà échues à la fermeture de l'application (rappel programmé dans 2h en journée ou le lendemain matin à 10h), en plus du calcul prédictif sur le seuil d'oubli FSRS.
+- **Bouton de test & Diagnostic instantané** dans les Paramètres.
 
 ### 🗃️ Zéro Carte en Dur (Clean Slate)
 L'application démarre vierge, sans aucune carte figée dans le code source. Vous créez et organisez librement vos propres paquets ou importez vos decks en un clic.
@@ -133,6 +145,7 @@ flowchart TD
     subgraph State Management
         DeckProvider[DeckProvider - CRUD, Actifs & Modes]
         ReviewProvider[ReviewProvider - File FSRS & QCM]
+        StreakProvider[StreakProvider - Série & Tolérance]
     end
 
     subgraph UI
@@ -175,7 +188,7 @@ flutter pub get
 ```bash
 flutter test
 ```
-*Résultat : 49/49 tests réussis (dont 6 tests de captures d'écran Golden automatisés).*
+*Résultat : 56/56 tests réussis (dont 6 tests de captures d'écran Golden automatisés et 7 tests de règles de streak).*
 
 ### Lancer l'analyse statique
 ```bash

@@ -6,6 +6,7 @@ import 'package:learn_flashcards/models/flashcard.dart';
 import 'package:learn_flashcards/providers/deck_provider.dart';
 import 'package:learn_flashcards/providers/review_provider.dart';
 import 'package:learn_flashcards/providers/settings_provider.dart';
+import 'package:learn_flashcards/providers/streak_provider.dart';
 import 'package:learn_flashcards/screens/qcm_screen.dart';
 import 'package:learn_flashcards/services/storage_service.dart';
 
@@ -30,6 +31,7 @@ Widget _buildTestApp({
   required DeckProvider deckProvider,
   required ReviewProvider reviewProvider,
   required SettingsProvider settingsProvider,
+  StreakProvider? streakProvider,
 }) {
   return MultiProvider(
     providers: [
@@ -37,6 +39,7 @@ Widget _buildTestApp({
       ChangeNotifierProvider<DeckProvider>.value(value: deckProvider),
       ChangeNotifierProvider<ReviewProvider>.value(value: reviewProvider),
       ChangeNotifierProvider<SettingsProvider>.value(value: settingsProvider),
+      ChangeNotifierProvider<StreakProvider>.value(value: streakProvider ?? StreakProvider()),
     ],
     child: MaterialApp(
       home: child,

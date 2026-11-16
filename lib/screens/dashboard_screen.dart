@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../models/deck.dart';
 import '../providers/deck_provider.dart';
 import '../providers/review_provider.dart';
+import '../providers/streak_provider.dart';
 import '../theme/catppuccin.dart';
 import '../widgets/kawaii_button.dart';
 import 'review_screen.dart';
@@ -222,9 +223,140 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  Widget _buildStreakBanner(StreakProvider streakProvider) {
+    Color bgColor;
+    Color borderColor;
+    Color textColor;
+    String text;
+    IconData icon;
+
+    if (streakProvider.reviewedToday) {
+      bgColor = Catppuccin.green.withValues(alpha: 0.12);
+      borderColor = Catppuccin.green.withValues(alpha: 0.4);
+      textColor = Catppuccin.green;
+      text = '✨ Série du jour validée ! (${streakProvider.currentStreak} j consécutifs) 🎉';
+      icon = Icons.check_circle_rounded;
+    } else if (streakProvider.isAtRisk) {
+      bgColor = Catppuccin.red.withValues(alpha: 0.15);
+      borderColor = Catppuccin.red;
+      textColor = Catppuccin.red;
+      text = '⚠️ 1 jour sauté ! Révise aujourd\'hui pour sauver ta flamme de ${streakProvider.currentStreak} j !';
+      icon = Icons.warning_amber_rounded;
+    } else if (streakProvider.currentStreak > 0) {
+      bgColor = Catppuccin.peach.withValues(alpha: 0.12);
+      borderColor = Catppuccin.peach.withValues(alpha: 0.4);
+      textColor = Catppuccin.peach;
+      text = '🔥 ${streakProvider.currentStreak} jours en cours • Révise aujourd\'hui pour l\'augmenter !';
+      icon = Icons.local_fire_department_rounded;
+    } else {
+      bgColor = Catppuccin.surface0.withValues(alpha: 0.4);
+      borderColor = Catppuccin.surface0;
+      textColor = Catppuccin.subtext;
+      text = '🔥 0 jour • Fais une révision pour allumer ta première flamme !';
+      icon = Icons.bolt_rounded;
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: borderColor, width: 2),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: textColor, size: 18),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                color: textColor,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showStreakDialog(BuildContext context, StreakProvider streakProvider) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Catppuccin.mantle,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(26)),
+        title: const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('🔥 Série de Révision 🔥', style: TextStyle(color: Catppuccin.peach, fontWeight: FontWeight.w900)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              r'\(^ヮ^)/',
+              style: TextStyle(fontSize: 32, color: Catppuccin.sky, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Catppuccin.crust,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: Catppuccin.surface0, width: 2),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  Column(
+                    children: [
+                      Text(
+                        '${streakProvider.currentStreak}',
+                        style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: Catppuccin.peach),
+                      ),
+                      const Text('Série actuelle', style: TextStyle(color: Catppuccin.subtext, fontSize: 12)),
+                    ],
+                  ),
+                  Container(width: 2, height: 36, color: Catppuccin.surface0),
+                  Column(
+                    children: [
+                      Text(
+                        '${streakProvider.bestStreak}',
+                        style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: Catppuccin.yellow),
+                      ),
+                      const Text('Record 🏆', style: TextStyle(color: Catppuccin.subtext, fontSize: 12)),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              '💡 Règle de Tolérance :\nTa série continue si tu révises au moins une carte par jour.\nTu peux sauter 1 jour sans pénalité : la flamme ne s\'éteint que si tu manques 2 jours consécutifs !',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Catppuccin.text, fontSize: 13, height: 1.4),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Super ! ⚡', style: TextStyle(color: Catppuccin.sky, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final deckProvider = Provider.of<DeckProvider>(context);
+    final streakProvider = Provider.of<StreakProvider>(context);
     final decks = deckProvider.decks;
 
     return Scaffold(
@@ -246,14 +378,59 @@ class _DashboardScreenState extends State<DashboardScreen> {
             tooltip: _isRandomOrder ? 'Ordre Aléatoire' : 'Ordre Chronologique',
             onPressed: _toggleRandom,
           ),
+          InkWell(
+            onTap: () => _showStreakDialog(context, streakProvider),
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: streakProvider.reviewedToday
+                    ? Catppuccin.green.withValues(alpha: 0.15)
+                    : streakProvider.isAtRisk
+                        ? Catppuccin.red.withValues(alpha: 0.15)
+                        : Catppuccin.peach.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: streakProvider.reviewedToday
+                      ? Catppuccin.green
+                      : streakProvider.isAtRisk
+                          ? Catppuccin.red
+                          : Catppuccin.peach,
+                  width: 2,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    streakProvider.currentStreak > 0 ? '🔥' : '❄️',
+                    style: const TextStyle(fontSize: 15),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${streakProvider.currentStreak}',
+                    style: TextStyle(
+                      color: streakProvider.reviewedToday
+                          ? Catppuccin.green
+                          : streakProvider.isAtRisk
+                              ? Catppuccin.red
+                              : Catppuccin.peach,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
           const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16.0),
+            padding: EdgeInsets.symmetric(horizontal: 12.0),
             child: Center(
               child: Text(
                 '(◕‿◕)',
                 style: TextStyle(
                   color: Catppuccin.blue,
-                  fontSize: 22,
+                  fontSize: 20,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -314,33 +491,78 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       Text(
                                         '${deckProvider.totalCardsCount}',
                                         style: const TextStyle(
-                                          fontSize: 34,
+                                          fontSize: 30,
                                           fontWeight: FontWeight.w900,
                                           color: Catppuccin.sky,
                                         ),
                                       ),
-                                      const Text('Total cartes', style: TextStyle(color: Catppuccin.subtext, fontSize: 13)),
+                                      const Text('Total cartes', style: TextStyle(color: Catppuccin.subtext, fontSize: 11)),
                                     ],
                                   ),
                                 ),
-                                Container(width: 2, height: 40, color: Catppuccin.surface0),
+                                Container(width: 2, height: 36, color: Catppuccin.surface0),
                                 Expanded(
                                   child: Column(
                                     children: [
                                       Text(
                                         '${deckProvider.selectedDueCardsCount}',
                                         style: const TextStyle(
-                                          fontSize: 34,
+                                          fontSize: 30,
                                           fontWeight: FontWeight.w900,
                                           color: Catppuccin.blue,
                                         ),
                                       ),
-                                      const Text('À réviser', style: TextStyle(color: Catppuccin.subtext, fontSize: 13)),
+                                      const Text('À réviser', style: TextStyle(color: Catppuccin.subtext, fontSize: 11)),
                                     ],
+                                  ),
+                                ),
+                                Container(width: 2, height: 36, color: Catppuccin.surface0),
+                                Expanded(
+                                  child: InkWell(
+                                    onTap: () => _showStreakDialog(context, streakProvider),
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: Column(
+                                      children: [
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Text(
+                                              streakProvider.currentStreak > 0 ? '🔥' : '❄️',
+                                              style: const TextStyle(fontSize: 20),
+                                            ),
+                                            const SizedBox(width: 3),
+                                            Text(
+                                              '${streakProvider.currentStreak}',
+                                              style: TextStyle(
+                                                fontSize: 30,
+                                                fontWeight: FontWeight.w900,
+                                                color: streakProvider.reviewedToday
+                                                    ? Catppuccin.green
+                                                    : streakProvider.isAtRisk
+                                                        ? Catppuccin.red
+                                                        : Catppuccin.peach,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        Text(
+                                          'Série',
+                                          style: TextStyle(
+                                            color: streakProvider.reviewedToday
+                                                ? Catppuccin.green
+                                                : Catppuccin.subtext,
+                                            fontSize: 11,
+                                            fontWeight: streakProvider.reviewedToday ? FontWeight.bold : FontWeight.normal,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ],
                             ),
+                            const SizedBox(height: 16),
+                            _buildStreakBanner(streakProvider),
                           ],
                         ),
                       ),

@@ -10,6 +10,7 @@ import 'package:learn_flashcards/models/flashcard.dart';
 import 'package:learn_flashcards/providers/deck_provider.dart';
 import 'package:learn_flashcards/providers/review_provider.dart';
 import 'package:learn_flashcards/providers/settings_provider.dart';
+import 'package:learn_flashcards/providers/streak_provider.dart';
 import 'package:learn_flashcards/screens/dashboard_screen.dart';
 import 'package:learn_flashcards/screens/deck_detail_screen.dart';
 import 'package:learn_flashcards/screens/deck_manager_screen.dart';
@@ -38,11 +39,21 @@ Widget _wrapScreen({
   required DeckProvider deckProvider,
   required ReviewProvider reviewProvider,
   required SettingsProvider settingsProvider,
+  StreakProvider? streakProvider,
 }) {
+  final streak = streakProvider ??
+      (StreakProvider()
+        ..resetForTest(
+          currentStreak: 5,
+          bestStreak: 12,
+          lastReviewDate: DateTime.now(),
+        ));
+
   return MultiProvider(
     providers: [
       Provider<StorageService>.value(value: storage),
       ChangeNotifierProvider.value(value: settingsProvider),
+      ChangeNotifierProvider.value(value: streak),
       ChangeNotifierProvider.value(value: deckProvider),
       ChangeNotifierProvider.value(value: reviewProvider),
     ],

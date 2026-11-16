@@ -6,6 +6,7 @@ import 'package:learn_flashcards/models/flashcard.dart';
 import 'package:learn_flashcards/providers/deck_provider.dart';
 import 'package:learn_flashcards/providers/review_provider.dart';
 import 'package:learn_flashcards/providers/settings_provider.dart';
+import 'package:learn_flashcards/providers/streak_provider.dart';
 import 'package:learn_flashcards/screens/main_navigation_screen.dart';
 import 'package:learn_flashcards/screens/settings_screen.dart';
 import 'package:learn_flashcards/services/storage_service.dart';
@@ -122,6 +123,7 @@ void main() {
           ChangeNotifierProvider(create: (_) => SettingsProvider()),
           ChangeNotifierProvider(create: (_) => DeckProvider(fakeStorage)),
           ChangeNotifierProvider(create: (_) => ReviewProvider()),
+          ChangeNotifierProvider(create: (_) => StreakProvider()),
         ],
         child: const MaterialApp(
           home: MainNavigationScreen(),

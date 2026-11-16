@@ -19,6 +19,22 @@ subprojects {
     project.evaluationDependsOn(":app")
 }
 
+subprojects {
+    plugins.withId("com.android.library") {
+        val android = extensions.findByName("android")
+        if (android != null) {
+            try {
+                val getNamespace = android.javaClass.getMethod("getNamespace")
+                val setNamespace = android.javaClass.getMethod("setNamespace", String::class.java)
+                if (getNamespace.invoke(android) == null) {
+                    val ns = if (project.name == "isar_flutter_libs") "dev.isar.isar_flutter_libs" else "com.kawaii.${project.name.replace('-', '_')}"
+                    setNamespace.invoke(android, ns)
+                }
+            } catch (_: Exception) {}
+        }
+    }
+}
+
 tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
 }

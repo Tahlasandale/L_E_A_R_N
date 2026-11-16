@@ -1,0 +1,101 @@
+name: 🚀 Build & Publish Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Nom du tag de release (ex: v1.1.4, laisser vide pour dériver de pubspec.yaml)'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    name: 📦 Compile & Publish Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🧑‍💻 Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: ☕ Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: 🐦 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.7'
+          channel: 'stable'
+          cache: true
+
+      - name: 📦 Install Dependencies
+        run: flutter pub get
+
+      - name: 🧪 Run Automated Tests
+        run: flutter test
+
+      - name: 🏷️ Determine Release Tag & Version
+        id: vars
+        run: |
+          if [ -n "${{ github.event.inputs.tag_name }}" ]; then
+            TAG="${{ github.event.inputs.tag_name }}"
+          elif [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            TAG="${GITHUB_REF#refs/tags/}"
+          else
+            PUBSPEC_VER=$(grep '^version:' pubspec.yaml | awk '{print $2}' | cut -d'+' -f1)
+            TAG="v${PUBSPEC_VER}"
+          fi
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "Building release for tag: ${TAG}"
+
+      - name: 🤖 Build Android Release APK
+        run: flutter build apk --release
+
+      - name: 🌐 Build Web Release
+        run: flutter build web --release
+
+      - name: 🗜️ Package Release Artifacts
+        run: |
+          TAG="${{ steps.vars.outputs.tag }}"
+          APK_DIR="build/app/outputs/flutter-apk"
+          
+          # Renommer / dupliquer pour correspondre au lien direct du README
+          cp "${APK_DIR}/app-release.apk" "${APK_DIR}/Kawaii-Flashcards.apk"
+          cp "${APK_DIR}/app-release.apk" "${APK_DIR}/Kawaii-Flashcards-${TAG}.apk"
+          
+          # Générer les sommes de contrôle SHA256
+          cd "${APK_DIR}"
+          sha256sum Kawaii-Flashcards.apk > Kawaii-Flashcards.apk.sha256
+          sha256sum "Kawaii-Flashcards-${TAG}.apk" > "Kawaii-Flashcards-${TAG}.apk.sha256"
+          cd -
+          
+          # Archiver le bundle web
+          cd build/web
+          zip -r ../Kawaii-Flashcards-web.zip .
+          cd -
+
+      - name: 🚀 Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.vars.outputs.tag }}
+          name: Kawaii Flashcards ${{ steps.vars.outputs.tag }} ⚡
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: |
+            build/app/outputs/flutter-apk/Kawaii-Flashcards.apk
+            build/app/outputs/flutter-apk/Kawaii-Flashcards-*.apk
+            build/app/outputs/flutter-apk/*.sha256
+            build/Kawaii-Flashcards-web.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

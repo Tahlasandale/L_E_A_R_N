@@ -21,7 +21,7 @@
   <img src="https://img.shields.io/badge/Database-Isar%20NoSQL-4A154B" alt="Isar" />
   <img src="https://img.shields.io/badge/Algorithm-FSRS%20%2F%20SM--2-89B4FA" alt="FSRS" />
   <img src="https://img.shields.io/badge/Theme-Catppuccin%20Macchiato-1E1E2E?logoColor=CDD6F4" alt="Catppuccin Macchiato" />
-  <img src="https://img.shields.io/badge/Tests-59%2F59%20Passing-A6E3A1" alt="Tests" />
+  <img src="https://img.shields.io/badge/Tests-60%2F60%20Passing-A6E3A1" alt="Tests" />
   <img src="https://img.shields.io/badge/License-MIT-fab387" alt="License" />
 </p>
 

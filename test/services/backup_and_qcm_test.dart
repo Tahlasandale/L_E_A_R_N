@@ -26,7 +26,7 @@ void main() {
 
       expect(jsonStr, isNotEmpty);
       final data = jsonDecode(jsonStr) as Map<String, dynamic>;
-      expect(data['version'], 1);
+      expect(data['version'], 2);
       expect(data['app'], 'Kawaii Flashcards');
       expect(data['settings']['desiredRetention'], 0.92);
       expect(data['settings']['qcmGoodAnswerDuration'], 1.5);
@@ -112,6 +112,45 @@ void main() {
       final physDeck = provider.decks.firstWhere((d) => d.name == 'Physique');
       expect(physDeck.allCards.length, 1);
       expect(physDeck.mode, FsrsMode.longTermDays);
+    });
+
+    test('importFullBackupJson restaure la streak et les réglages sans perte', () async {
+      final storage = StorageService();
+      Map<String, dynamic>? importedStreak;
+
+      final backupData = {
+        'version': 2,
+        'app': 'Kawaii Flashcards',
+        'exportDate': DateTime.now().toIso8601String(),
+        'streak': {
+          'currentStreak': 7,
+          'bestStreak': 14,
+          'reviewedToday': true,
+          'isAtRisk': false,
+        },
+        'settings': {
+          'desiredRetention': 0.95,
+        },
+        'decks': [
+          {
+            'name': 'Anglais',
+            'cards': [
+              {'front': 'Cat', 'back': 'Chat'}
+            ]
+          }
+        ]
+      };
+
+      final stats = await storage.importFullBackupJson(
+        jsonEncode(backupData),
+        onStreakImport: (s) => importedStreak = s,
+      );
+
+      expect(stats['decksAdded'], 1);
+      expect(stats['cardsAdded'], 1);
+      expect(importedStreak, isNotNull);
+      expect(importedStreak!['currentStreak'], 7);
+      expect(importedStreak!['bestStreak'], 14);
     });
   });
 

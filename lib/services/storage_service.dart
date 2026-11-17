@@ -12,6 +12,9 @@ class StorageService {
   int _webIdCounter = 1;
   String? _storageDirectoryPath;
   bool didAutoRestoreFromMirror = false;
+  String? autoRestoreSource;
+  int autoRestoredDeckCount = 0;
+  int autoRestoredCardCount = 0;
 
   Isar? get isar => _isar;
   bool get hasIsar => _isar != null && !kIsWeb;
@@ -75,21 +78,68 @@ class StorageService {
     await _checkAndAutoRestoreMirror(path);
   }
 
-  /// Vérifie si la base est vide et auto-restaure depuis le miroir JSON permanent
+  /// Vérifie si la base est vide et auto-restaure depuis le miroir JSON permanent (interne ou externe persistant)
   Future<void> _checkAndAutoRestoreMirror(String path) async {
     try {
-      final mirrorFile = File('$path/vault_backup.json');
-      if (await mirrorFile.exists()) {
-        final jsonStr = await mirrorFile.readAsString();
-        if (jsonStr.trim().isNotEmpty) {
-          final existing = await getAllDecks();
-          if (existing.isEmpty) {
-            final stats = await importFullBackupJson(jsonStr);
-            if ((stats['decksAdded'] ?? 0) > 0 || (stats['cardsAdded'] ?? 0) > 0) {
-              didAutoRestoreFromMirror = true;
-              debugPrint('Auto-restauration réussie depuis le miroir JSON: $stats');
+      final existing = await getAllDecks();
+      if (existing.isNotEmpty) {
+        return;
+      }
+
+      File? candidateFile;
+      String? sourceDesc;
+
+      // 1. Chercher dans le miroir interne privé
+      final internalMirror = File('$path/vault_backup.json');
+      if (await internalMirror.exists()) {
+        final content = await internalMirror.readAsString();
+        if (content.trim().isNotEmpty) {
+          candidateFile = internalMirror;
+          sourceDesc = 'interne';
+        }
+      }
+
+      // 2. Si non trouvé, chercher dans le dossier externe persistant Download/KawaiiFlashcards
+      if (candidateFile == null) {
+        final downloadDir = Directory('/storage/emulated/0/Download/KawaiiFlashcards');
+        final extFile = File('${downloadDir.path}/vault_backup.json');
+        if (await extFile.exists()) {
+          final content = await extFile.readAsString();
+          if (content.trim().isNotEmpty) {
+            candidateFile = extFile;
+            sourceDesc = 'Download/KawaiiFlashcards';
+          }
+        }
+      }
+
+      // 3. Si toujours non trouvé, chercher dans getExternalStorageDirectory()
+      if (candidateFile == null) {
+        try {
+          final extDir = await getExternalStorageDirectory();
+          if (extDir != null) {
+            final extFile = File('${extDir.path}/vault_backup.json');
+            if (await extFile.exists()) {
+              final content = await extFile.readAsString();
+              if (content.trim().isNotEmpty) {
+                candidateFile = extFile;
+                sourceDesc = 'stockage externe';
+              }
             }
           }
+        } catch (_) {}
+      }
+
+      if (candidateFile != null) {
+        final jsonStr = await candidateFile.readAsString();
+        final stats = await importFullBackupJson(jsonStr);
+        final dAdded = stats['decksAdded'] ?? 0;
+        final cAdded = stats['cardsAdded'] ?? 0;
+        if (dAdded > 0 || cAdded > 0) {
+          didAutoRestoreFromMirror = true;
+          autoRestoreSource = sourceDesc;
+          autoRestoredDeckCount = dAdded;
+          autoRestoredCardCount = cAdded;
+          debugPrint('Auto-restauration réussie depuis $sourceDesc: $stats');
         }
       }
     } catch (e) {
@@ -97,7 +147,35 @@ class StorageService {
     }
   }
 
-  /// Écrit une sauvegarde miroir atomique sur le disque local
+  /// Restaure manuellement la base depuis le miroir externe dans Download/KawaiiFlashcards ou stockage externe
+  Future<Map<String, int>?> restoreFromExternalMirror() async {
+    try {
+      File? candidateFile;
+      final downloadDir = Directory('/storage/emulated/0/Download/KawaiiFlashcards');
+      final extFile = File('${downloadDir.path}/vault_backup.json');
+      if (await extFile.exists()) {
+        candidateFile = extFile;
+      } else {
+        final extDir = await getExternalStorageDirectory();
+        if (extDir != null) {
+          final altFile = File('${extDir.path}/vault_backup.json');
+          if (await altFile.exists()) {
+            candidateFile = altFile;
+          }
+        }
+      }
+
+      if (candidateFile == null) return null;
+      final jsonStr = await candidateFile.readAsString();
+      if (jsonStr.trim().isEmpty) return null;
+      return await importFullBackupJson(jsonStr);
+    } catch (e) {
+      debugPrint('Erreur restoreFromExternalMirror: $e');
+      return null;
+    }
+  }
+
+  /// Écrit une sauvegarde miroir atomique sur le disque local (interne ET externe persistant)
   Future<void> _writeMirrorBackup() async {
     if (kIsWeb) return;
     try {
@@ -105,10 +183,35 @@ class StorageService {
       if (path == null) return;
 
       final jsonStr = await exportFullBackupJson();
+
+      // 1. Écriture atomique dans le dossier privé interne
       final tmpFile = File('$path/vault_backup.json.tmp');
       await tmpFile.writeAsString(jsonStr, flush: true);
       final targetFile = File('$path/vault_backup.json');
       await tmpFile.rename(targetFile.path);
+
+      // 2. Écriture miroir dans le dossier externe persistant Download/KawaiiFlashcards
+      try {
+        final downloadDir = Directory('/storage/emulated/0/Download/KawaiiFlashcards');
+        if (!await downloadDir.exists()) {
+          await downloadDir.create(recursive: true);
+        }
+        final extFile = File('${downloadDir.path}/vault_backup.json');
+        await extFile.writeAsString(jsonStr, flush: true);
+      } catch (e) {
+        debugPrint('Miroir Download: $e');
+      }
+
+      // 3. Écriture miroir dans getExternalStorageDirectory()
+      try {
+        final extDir = await getExternalStorageDirectory();
+        if (extDir != null) {
+          final extFile = File('${extDir.path}/vault_backup.json');
+          await extFile.writeAsString(jsonStr, flush: true);
+        }
+      } catch (e) {
+        debugPrint('Miroir getExternalStorageDirectory: $e');
+      }
     } catch (e) {
       debugPrint('Erreur écriture miroir JSON: $e');
     }
@@ -383,6 +486,27 @@ class StorageService {
     Map<String, dynamic>? extraSettings,
     Map<String, dynamic>? streakData,
   }) async {
+    Map<String, dynamic>? finalStreak = streakData;
+    Map<String, dynamic>? finalSettings = extraSettings;
+    if (_storageDirectoryPath != null) {
+      if (finalStreak == null) {
+        try {
+          final sFile = File('$_storageDirectoryPath/streak_data.json');
+          if (await sFile.exists()) {
+            finalStreak = jsonDecode(await sFile.readAsString()) as Map<String, dynamic>?;
+          }
+        } catch (_) {}
+      }
+      if (finalSettings == null) {
+        try {
+          final setFile = File('$_storageDirectoryPath/app_settings.json');
+          if (await setFile.exists()) {
+            finalSettings = jsonDecode(await setFile.readAsString()) as Map<String, dynamic>?;
+          }
+        } catch (_) {}
+      }
+    }
+
     final allDecks = await getAllDecks();
     final List<Map<String, dynamic>> decksData = [];
 
@@ -407,10 +531,10 @@ class StorageService {
 
     final Map<String, dynamic> root = {
       'app': 'Kawaii Flashcards',
-      'version': 1,
+      'version': 2,
       'exportedAt': DateTime.now().toIso8601String(),
-      'settings': ?extraSettings,
-      'streak': ?streakData,
+      'settings': ?finalSettings,
+      'streak': ?finalStreak,
       'decks': decksData,
     };
 
@@ -433,7 +557,24 @@ class StorageService {
     }
 
     if (parsed['streak'] is Map) {
-      onStreakImport?.call(Map<String, dynamic>.from(parsed['streak'] as Map));
+      final sMap = Map<String, dynamic>.from(parsed['streak'] as Map);
+      onStreakImport?.call(sMap);
+      if (_storageDirectoryPath != null) {
+        try {
+          final sFile = File('$_storageDirectoryPath/streak_data.json');
+          await sFile.writeAsString(jsonEncode(sMap), flush: true);
+        } catch (_) {}
+      }
+    }
+
+    if (parsed['settings'] is Map) {
+      final setMap = Map<String, dynamic>.from(parsed['settings'] as Map);
+      if (_storageDirectoryPath != null) {
+        try {
+          final setFile = File('$_storageDirectoryPath/app_settings.json');
+          await setFile.writeAsString(jsonEncode(setMap), flush: true);
+        } catch (_) {}
+      }
     }
 
     final rawDecks = parsed['decks'];

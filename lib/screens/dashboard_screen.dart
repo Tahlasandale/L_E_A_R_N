@@ -4,6 +4,7 @@ import '../models/deck.dart';
 import '../providers/deck_provider.dart';
 import '../providers/review_provider.dart';
 import '../providers/streak_provider.dart';
+import '../services/storage_service.dart';
 import '../theme/catppuccin.dart';
 import '../widgets/kawaii_button.dart';
 import 'review_screen.dart';
@@ -19,6 +20,34 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   bool _isRandomOrder = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final storage = Provider.of<StorageService>(context, listen: false);
+      if (storage.didAutoRestoreFromMirror) {
+        storage.didAutoRestoreFromMirror = false;
+        final deckProvider = Provider.of<DeckProvider>(context, listen: false);
+        deckProvider.loadDecks();
+        final streakProvider = Provider.of<StreakProvider>(context, listen: false);
+        streakProvider.init();
+        final messenger = ScaffoldMessenger.of(context);
+
+        messenger.showSnackBar(
+          SnackBar(
+            backgroundColor: Catppuccin.mantle,
+            duration: const Duration(seconds: 4),
+            content: Text(
+              '🎉 Sauvegarde restaurée automatiquement (${storage.autoRestoredDeckCount} paquets, ${storage.autoRestoredCardCount} cartes) !',
+              style: const TextStyle(color: Catppuccin.green, fontWeight: FontWeight.bold),
+            ),
+          ),
+        );
+      }
+    });
+  }
 
   void _toggleRandom() {
     setState(() {

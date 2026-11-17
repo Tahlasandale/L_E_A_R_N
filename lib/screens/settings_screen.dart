@@ -241,6 +241,44 @@ class SettingsScreen extends StatelessWidget {
     }
   }
 
+  Future<void> _handleRestoreExternalMirror(BuildContext context) async {
+    final storage = Provider.of<StorageService>(context, listen: false);
+    final deckProvider = Provider.of<DeckProvider>(context, listen: false);
+    final streakProvider = Provider.of<StreakProvider>(context, listen: false);
+    final messenger = ScaffoldMessenger.of(context);
+
+    final stats = await storage.restoreFromExternalMirror();
+    if (!context.mounted) return;
+
+    if (stats != null && ((stats['decksAdded'] ?? 0) > 0 || (stats['cardsAdded'] ?? 0) > 0 || (stats['cardsUpdated'] ?? 0) > 0)) {
+      await deckProvider.loadDecks();
+      await streakProvider.init();
+      if (!context.mounted) return;
+
+      messenger.showSnackBar(
+        SnackBar(
+          backgroundColor: Catppuccin.mantle,
+          duration: const Duration(seconds: 3),
+          content: Text(
+            '🎉 Miroir externe restauré (${stats['decksAdded']} paquets, ${stats['cardsAdded']} cartes) !',
+            style: const TextStyle(color: Catppuccin.green, fontWeight: FontWeight.bold),
+          ),
+        ),
+      );
+    } else {
+      messenger.showSnackBar(
+        const SnackBar(
+          backgroundColor: Catppuccin.mantle,
+          duration: Duration(seconds: 3),
+          content: Text(
+            'ℹ️ Aucun fichier miroir trouvé dans Download/KawaiiFlashcards/.',
+            style: TextStyle(color: Catppuccin.subtext),
+          ),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -508,6 +546,33 @@ class SettingsScreen extends StatelessWidget {
                     ),
                   ],
                 ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Catppuccin.surface0.withValues(alpha: 0.4),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Catppuccin.green.withValues(alpha: 0.3)),
+                  ),
+                  child: const Row(
+                    children: [
+                      Text('🛡️', style: TextStyle(fontSize: 18)),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Miroir persistant actif : tes cartes sont aussi sauvegardées dans Download/KawaiiFlashcards/ pour survivre à une désinstallation.',
+                          style: TextStyle(color: Catppuccin.subtext, fontSize: 11.5, height: 1.3),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                KawaiiButton.secondary(
+                  height: 44,
+                  onPressed: () => _handleRestoreExternalMirror(context),
+                  child: const Text('Restaurer miroir Download 🔄', style: TextStyle(fontSize: 13)),
+                ),
               ],
             ),
           ),
@@ -586,8 +651,10 @@ class SettingsScreen extends StatelessWidget {
                 ),
                 SizedBox(height: 12),
                 Text(
-                  'Kawaii Flashcards v1.1.5\n'
+                  'Kawaii Flashcards v1.1.6\n'
                   '• Moteur de répétition espacée FSRS / SM-2 avec rétention paramétrable (70%-98%)\n'
+                  '• Mises à jour sans désinstallation grâce à la signature permanente officielle\n'
+                  '• Miroir externe persistant dans Download/ pour survie garantie post-désinstallation\n'
                   '• Série quotidienne (streak) avec tolérance bienveillante de 2 jours consécutifs\n'
                   '• Rappels quotidiens fiabilisés & notifications prédictives FSRS\n'
                   '• Double persistance Isar NoSQL + Miroir JSON local automatique\n'

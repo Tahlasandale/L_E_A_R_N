@@ -651,7 +651,8 @@ class SettingsScreen extends StatelessWidget {
                 ),
                 SizedBox(height: 12),
                 Text(
-                  'Kawaii Flashcards v1.1.6\n'
+                  'Kawaii Flashcards v1.1.7\n'
+                  '• Édition en direct des cartes en cours de révision (bouton ✏️ & modale)\n'
                   '• Moteur de répétition espacée FSRS / SM-2 avec rétention paramétrable (70%-98%)\n'
                   '• Mises à jour sans désinstallation grâce à la signature permanente officielle\n'
                   '• Miroir externe persistant dans Download/ pour survie garantie post-désinstallation\n'

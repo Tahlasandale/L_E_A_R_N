@@ -81,6 +81,134 @@ class ReviewScreen extends StatelessWidget {
     );
   }
 
+  void _showEditCardModal(BuildContext context, ReviewProvider reviewProvider) {
+    final card = reviewProvider.currentCard;
+    if (card == null) return;
+
+    final frontController = TextEditingController(text: card.front);
+    final backController = TextEditingController(text: card.back);
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Catppuccin.mantle,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: const Row(
+          children: [
+            Text('✏️ ', style: TextStyle(fontSize: 22)),
+            Text(
+              'Modifier la carte',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Catppuccin.sky,
+              ),
+            ),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: frontController,
+                minLines: 1,
+                maxLines: 4,
+                style: const TextStyle(color: Catppuccin.text),
+                decoration: InputDecoration(
+                  labelText: 'Question (Recto)',
+                  labelStyle: const TextStyle(color: Catppuccin.overlay),
+                  filled: true,
+                  fillColor: Catppuccin.surface0,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: const BorderSide(color: Catppuccin.surface1),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: const BorderSide(color: Catppuccin.sky, width: 2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              TextField(
+                controller: backController,
+                minLines: 1,
+                maxLines: 4,
+                style: const TextStyle(color: Catppuccin.text),
+                decoration: InputDecoration(
+                  labelText: 'Réponse (Verso)',
+                  labelStyle: const TextStyle(color: Catppuccin.overlay),
+                  filled: true,
+                  fillColor: Catppuccin.surface0,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: const BorderSide(color: Catppuccin.surface1),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: const BorderSide(color: Catppuccin.sky, width: 2),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Annuler', style: TextStyle(color: Catppuccin.subtext)),
+          ),
+          KawaiiButton(
+            height: 42,
+            width: 130,
+            onPressed: () async {
+              final newFront = frontController.text.trim();
+              final newBack = backController.text.trim();
+              if (newFront.isEmpty || newBack.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    backgroundColor: Catppuccin.red,
+                    content: Text(
+                      'La question et la réponse ne peuvent pas être vides !',
+                      style: TextStyle(color: Catppuccin.crust, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                );
+                return;
+              }
+
+              Navigator.pop(ctx);
+              HapticFeedback.lightImpact();
+              final storage = Provider.of<StorageService>(context, listen: false);
+              final deckProvider = Provider.of<DeckProvider>(context, listen: false);
+              await reviewProvider.updateCurrentCard(
+                front: newFront,
+                back: newBack,
+                storage: storage,
+                deckProvider: deckProvider,
+              );
+
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    backgroundColor: Catppuccin.mantle,
+                    duration: Duration(milliseconds: 1200),
+                    content: Text(
+                      '✏️ Carte modifiée avec succès !',
+                      style: TextStyle(color: Catppuccin.sky, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                );
+              }
+            },
+            child: const Text('Enregistrer 💾'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _confirmDeleteCard(BuildContext context, ReviewProvider reviewProvider) {
     final card = reviewProvider.currentCard;
     if (card == null) return;
@@ -222,6 +350,11 @@ class ReviewScreen extends StatelessWidget {
           ],
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.edit_outlined, color: Catppuccin.sky),
+            tooltip: 'Modifier cette carte (✏️)',
+            onPressed: () => _showEditCardModal(context, reviewProvider),
+          ),
           IconButton(
             icon: const Icon(Icons.delete_outline_rounded, color: Catppuccin.red),
             tooltip: 'Supprimer cette carte',

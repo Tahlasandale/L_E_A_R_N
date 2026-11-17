@@ -73,6 +73,28 @@ class ReviewProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  /// Met à jour le recto et le verso de la carte courante sans perturber la file de révision
+  Future<void> updateCurrentCard({
+    required String front,
+    required String back,
+    required StorageService storage,
+    DeckProvider? deckProvider,
+  }) async {
+    final card = currentCard;
+    if (card == null) return;
+
+    card.front = front.trim();
+    card.back = back.trim();
+
+    if (deckProvider != null) {
+      await deckProvider.updateCard(card);
+    } else {
+      await storage.saveCard(card);
+    }
+
+    notifyListeners();
+  }
+
   /// Initialise la file d'attente pour la session
   void initSession({
     required List<Flashcard> cards,

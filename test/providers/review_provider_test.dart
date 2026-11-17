@@ -6,10 +6,16 @@ import 'package:learn_flashcards/services/storage_service.dart';
 
 class _MockStorageService extends StorageService {
   final List<Id> deletedCardIds = [];
+  final List<Flashcard> savedCards = [];
 
   @override
   Future<void> deleteCard(Id cardId) async {
     deletedCardIds.add(cardId);
+  }
+
+  @override
+  Future<void> saveCard(Flashcard card) async {
+    savedCards.add(card);
   }
 }
 
@@ -183,6 +189,38 @@ void main() {
       await provider.deleteCurrentCard(storage: mockStorage);
       expect(provider.reviewQueue.isEmpty, isTrue);
       expect(provider.isSessionFinished, isTrue);
+    });
+  });
+
+  group('ReviewProvider - Édition de la Carte Courante', () {
+    test('updateCurrentCard met à jour recto et verso, persiste et notifie', () async {
+      final mockStorage = _MockStorageService();
+      final card1 = Flashcard()..id = 201..front = 'Ancienne Question'..back = 'Ancienne Réponse';
+      final card2 = Flashcard()..id = 202..front = 'Q2'..back = 'A2';
+
+      final provider = ReviewProvider();
+      provider.initSession(cards: [card1, card2]);
+
+      bool notified = false;
+      provider.addListener(() {
+        notified = true;
+      });
+
+      await provider.updateCurrentCard(
+        front: 'Nouvelle Question Corrigée',
+        back: 'Nouvelle Réponse Détaillée',
+        storage: mockStorage,
+      );
+
+      expect(provider.currentCard?.front, 'Nouvelle Question Corrigée');
+      expect(provider.currentCard?.back, 'Nouvelle Réponse Détaillée');
+      expect(mockStorage.savedCards.length, 1);
+      expect(mockStorage.savedCards.first.id, 201);
+      expect(mockStorage.savedCards.first.front, 'Nouvelle Question Corrigée');
+      expect(mockStorage.savedCards.first.back, 'Nouvelle Réponse Détaillée');
+      expect(provider.currentIndex, 0);
+      expect(provider.reviewQueue.length, 2);
+      expect(notified, isTrue);
     });
   });
 }
